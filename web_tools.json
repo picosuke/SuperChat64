@@ -10,6 +10,11 @@
     "description": "いろんなサイトがまとまってる、ミライ系は全部同じ。"
   },
   {
+    "name": "文字画",
+    "url": "https://textate-typeset.azurewebsites.net/ja",
+    "description": "文字を画像にできる。物に頼る前に技術を磨け(???)"
+  },
+  {
     "name": "PicoSite",
     "url": "https://direct-preview-67d128d0e788859d1c582656.monaca.education/",
     "description": "過去に管理者が作ったサイト。意外と使える？"
