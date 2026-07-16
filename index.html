@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>みんなのグループチャット</title>
+    <style>
+        /* --- デザイン（前回と同じ） --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
+        body { display: flex; height: 100vh; background-color: #f0f2f5; }
+        .sidebar { width: 250px; background: #fff; border-right: 1px solid #ddd; display: flex; flex-direction: column; }
+        .search-box { padding: 10px; border-bottom: 1px solid #ddd; }
+        .search-box input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        .member-list { flex: 1; overflow-y: auto; padding: 10px; }
+        .member { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }
+        .status { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+        .status.online { background: #4caf50; }
+        .status.offline { background: #ccc; }
+        .last-login { font-size: 10px; color: #888; }
+        .chat-area { flex: 1; display: flex; flex-direction: column; position: relative; }
+        .chat-header { padding: 15px; background: #fff; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; }
+        .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+        .msg-wrap { display: flex; flex-direction: column; max-width: 70%; }
+        .msg-wrap.mine { align-self: flex-end; align-items: flex-end; }
+        .msg-info { font-size: 12px; color: #666; margin-bottom: 2px; }
+        .message { background: #fff; padding: 10px 15px; border-radius: 15px; position: relative; word-break: break-all; }
+        .msg-wrap.mine .message { background: #85e249; } 
+        .msg-actions { font-size: 12px; color: #888; margin-top: 2px; display: flex; gap: 10px; cursor: pointer; }
+        .reaction { background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 2px 5px; font-size: 12px; cursor: pointer; }
+        .typing-indicator { padding: 5px 20px; font-size: 12px; color: #888; height: 25px; }
+        .input-area { background: #fff; padding: 10px 20px; border-top: 1px solid #ddd; display: flex; gap: 10px; align-items: flex-end; }
+        .input-area textarea { flex: 1; resize: none; padding: 10px; border: 1px solid #ccc; border-radius: 5px; height: 40px; overflow-y: hidden; }
+        .btn { padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .btn-icon { background: none; color: #555; font-size: 20px; padding: 5px; border:none; cursor: pointer;}
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: #fff; padding: 20px; border-radius: 8px; width: 300px; display: flex; flex-direction: column; gap: 10px; }
+        .modal.hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <!-- 設定モーダル（初回アクセス時に名前と番号を決める） -->
+    <div id="settingsModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>プロフィール設定</h3>
+            <input type="text" id="inputName" placeholder="名前" required>
+            <input type="text" id="inputNumber" placeholder="番号 (例: 001)" required>
+            <button class="btn" id="saveProfileBtn">チャットに参加する</button>
+        </div>
+    </div>
+
+    <!-- 左サイドバー（ダミー） -->
+    <div class="sidebar">
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="番号か名前で検索...">
+        </div>
+        <div class="member-list" id="memberList">
+            <div class="member"><div><span class="status online"></span> 太郎 (#001)</div></div>
+        </div>
+    </div>
+
+    <!-- メインチャット -->
+    <div class="chat-area">
+        <div class="chat-header">
+            <h3>グループチャット</h3>
+            <button class="btn" style="background:#6c757d;" onclick="requestNotification()">通知をON</button>
+        </div>
+        
+        <div class="messages" id="chatMessages">
+            <!-- ここにFirebaseからメッセージが入る -->
+        </div>
+
+        <div class="typing-indicator" id="typingIndicator"></div>
+
+        <div class="input-area">
+            <button class="btn-icon" title="画像/動画を送る">📎</button>
+            <textarea id="messageInput" placeholder="メッセージを入力... (Shift+Enterで改行)"></textarea>
+            <button class="btn" id="sendBtn">送信</button>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         ここからJavaScript (Firebase + 画面の動き)
+    =========================================== -->
+    <script type="module">
+        // 1. Firebaseの読み込み
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { 
+            getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, deleteDoc, updateDoc
+        } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        // 2. いただいたFirebase設定
+        const firebaseConfig = {
+            apiKey: "AIzaSyAM8INEj8WkLnOlXvx8swEAPTuX3u2_kt0",
+            authDomain: "superchat64-87af5.firebaseapp.com",
+            projectId: "superchat64-87af5",
+            storageBucket: "superchat64-87af5.firebasestorage.app",
+            messagingSenderId: "467180582942",
+            appId: "1:467180582942:web:ff1a1f1d729bf247dc160f",
+            measurementId: "G-M7W67T3FCM"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const msgRef = collection(db, "messages"); // Firestoreの"messages"コレクション
+
+        // --- プロフィール（Cookie）管理 ---
+        let myName = "";
+        let myNumber = "";
+
+        function getCookie(name) {
+            let matches = document.cookie.match(new RegExp("(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"));
+            return matches ? decodeURIComponent(matches[1]) : undefined;
+        }
+
+        // 画面読み込み時にCookieチェック
+        myName = getCookie("chatName");
+        myNumber = getCookie("chatNumber");
+        if (!myName || !myNumber) {
+            document.getElementById('settingsModal').classList.remove('hidden');
+        }
+
+        // プロフィール保存ボタン
+        document.getElementById('saveProfileBtn').addEventListener('click', () => {
+            const name = document.getElementById('inputName').value;
+            const number = document.getElementById('inputNumber').value;
+            if(name && number) {
+                document.cookie = `chatName=${encodeURIComponent(name)}; max-age=2592000`;
+                document.cookie = `chatNumber=${encodeURIComponent(number)}; max-age=2592000`;
+                myName = name;
+                myNumber = number;
+                document.getElementById('settingsModal').classList.add('hidden');
+            }
+        });
+
+
+        // --- チャットの送受信処理 ---
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        let isFirstLoad = true; // 初回読み込み判定用
+
+        // メッセージ送信関数
+        async function sendMessage() {
+            const text = messageInput.value.trim();
+            if (!text || !myName || !myNumber) return;
+
+            messageInput.value = ""; // 先に入力欄をクリア
+            messageInput.style.height = "40px";
+
+            try {
+                await addDoc(msgRef, {
+                    name: myName,
+                    number: myNumber,
+                    text: text,
+                    createdAt: serverTimestamp(),
+                    likes: 0
+                });
+            } catch (e) {
+                console.error("送信エラー:", e);
+                alert("送信に失敗しました。Firestoreのルールが「テストモード」になっているか確認してください。");
+            }
+        }
+
+        // 送信ボタンとEnterキーのイベント
+        document.getElementById('sendBtn').addEventListener('click', sendMessage);
+        messageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // メッセージのリアルタイム受信（onSnapshot）
+        const q = query(msgRef, orderBy("createdAt", "asc"));
+        onSnapshot(q, (snapshot) => {
+            chatMessages.innerHTML = ""; // 画面リセット
+
+            snapshot.forEach((docSnap) => {
+                const data = docSnap.data();
+                const id = docSnap.id;
+                const isMine = (data.number === myNumber);
+
+                // リンクを<a>タグに変換
+                const linkedText = data.text ? data.text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>') : "";
+
+                const wrap = document.createElement('div');
+                wrap.className = `msg-wrap ${isMine ? 'mine' : ''}`;
+                wrap.innerHTML = `
+                    <div class="msg-info">${data.name} (#${data.number})</div>
+                    <div class="message">${linkedText.replace(/\n/g, '<br>')}
+                        <br>
+                        <button class="reaction" onclick="window.addReaction('${id}', ${data.likes || 0})">👍 <span>${data.likes || 0}</span></button>
+                    </div>
+                    ${isMine ? `
+                    <div class="msg-actions">
+                        <span onclick="window.editMessage('${id}', '${data.text.replace(/\n/g, '\\n')}')">編集</span> | 
+                        <span onclick="window.deleteMessage('${id}')">削除</span>
+                    </div>` : ''}
+                `;
+                chatMessages.appendChild(wrap);
+            });
+            
+            // 一番下にスクロール
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            // 新しいメッセージが来たら通知を出す (自分の送信以外 ＆ 初回読み込み以降)
+            if (!isFirstLoad) {
+                const changes = snapshot.docChanges();
+                changes.forEach((change) => {
+                    if (change.type === "added" && change.doc.data().number !== myNumber) {
+                        notifyNewMessage(change.doc.data().name, change.doc.data().text);
+                    }
+                });
+            }
+            isFirstLoad = false;
+        });
+
+        // --- 削除・編集・スタンプ（グローバルから呼べるようにwindowに登録） ---
+        window.deleteMessage = async function(id) {
+            if(confirm("削除しますか？")) {
+                await deleteDoc(doc(db, "messages", id));
+            }
+        };
+
+        window.editMessage = async function(id, oldText) {
+            const newText = prompt("編集してください", oldText);
+            if(newText && newText !== oldText) {
+                await updateDoc(doc(db, "messages", id), { text: newText });
+            }
+        };
+
+        window.addReaction = async function(id, currentLikes) {
+            await updateDoc(doc(db, "messages", id), { likes: currentLikes + 1 });
+        };
+
+
+        // --- 入力中アニメーション処理 ---
+        let typingTimer;
+        messageInput.addEventListener('input', () => {
+            messageInput.style.height = "40px";
+            messageInput.style.height = (messageInput.scrollHeight) + "px";
+            
+            document.getElementById('typingIndicator').innerText = "入力中...";
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(() => {
+                document.getElementById('typingIndicator').innerText = "";
+            }, 1000);
+        });
+
+
+        // --- プッシュ通知 ---
+        window.requestNotification = function() {
+            if (Notification.permission !== "denied") {
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") alert("通知がONになりました！");
+                });
+            }
+        };
+
+        function notifyNewMessage(senderName, text) {
+            if (Notification.permission === "granted") {
+                new Notification(`${senderName} から新着メッセージ`, { body: text });
+            }
+        }
+    </script>
+</body>
+</html>
