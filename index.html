@@ -25,12 +25,17 @@
         .menu-btn { display: none; font-size: 20px; background: none; border: none; cursor: pointer; margin-right: 10px; }
         .header-title { display: flex; align-items: center; font-weight: bold; }
 
+        /* タブデザイン */
+        .tabs { display: flex; gap: 15px; margin-left: 15px; }
+        .tab-btn { font-size: 16px; cursor: pointer; color: #888; padding: 5px 10px; border-bottom: 2px solid transparent; font-weight: bold; user-select: none; }
+        .tab-btn.active { color: #007bff; border-bottom: 2px solid #007bff; }
+
         /* メッセージ表示部 */
         .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
         .msg-wrap { display: flex; flex-direction: column; max-width: 85%; }
         .msg-wrap.mine { align-self: flex-end; align-items: flex-end; }
         .msg-info { font-size: 12px; color: #666; margin-bottom: 4px; display: flex; align-items: baseline; gap: 8px;}
-        .msg-time { font-size: 10px; color: #999; } /* 時間のスタイル */
+        .msg-time { font-size: 10px; color: #999; }
         .message { background: #fff; padding: 10px 15px; border-radius: 15px; position: relative; word-break: break-all; box-shadow: 0 1px 2px rgba(0,0,0,0.1); line-height: 1.4;}
         .msg-wrap.mine .message { background: #dcf8c6; } 
         .msg-actions { font-size: 11px; color: #888; margin-top: 4px; display: flex; gap: 10px; cursor: pointer; }
@@ -50,17 +55,21 @@
         .btn { padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 20px; cursor: pointer; font-weight: bold;}
         .btn-icon { background: none; color: #555; font-size: 26px; padding: 0 5px; border:none; cursor: pointer; font-weight: bold;}
 
-        /* モーダル共通 */
+        /* 便利サイト一覧表示エリア */
+        .sites-container { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+        .site-card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 8px; width: 100%; }
+        .site-card-header { display: flex; justify-content: space-between; align-items: center; }
+        .site-name { font-weight: bold; font-size: 16px; color: #333; }
+        .site-desc { font-size: 13px; color: #666; line-height: 1.4; }
+
+        /* モーダル */
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background: #fff; padding: 25px; border-radius: 12px; width: 90%; max-width: 350px; display: flex; flex-direction: column; gap: 12px; }
         .modal.hidden { display: none; }
-        
-        /* ログインモーダル */
         .login-content { text-align: center; }
         .login-content input { padding: 10px; border: 1px solid #ccc; border-radius: 6px; width: 100%; font-size: 16px;}
         .help-text { font-size: 11px; color: #888; text-align: left; line-height: 1.4; margin-top: -5px; }
 
-        /* 初回説明モーダル */
         .intro-content { font-size: 14px; line-height: 1.6; color: #333; max-height: 80vh; overflow-y: auto;}
         .intro-content h3 { text-align: center; color: #007bff; margin-bottom: 10px;}
         .intro-content ul { padding-left: 20px; margin-bottom: 10px; }
@@ -121,24 +130,35 @@
         <div class="member-list" id="memberList"></div>
     </div>
 
-    <!-- メインチャット -->
+    <!-- メイン表示エリア -->
     <div class="chat-area" id="chatArea">
         <div class="chat-header">
             <div class="header-title">
                 <button class="menu-btn" id="menuBtn">≡</button>
-                <span>グループチャット</span>
+                <div class="tabs">
+                    <span class="tab-btn active" id="tabChat">Chat</span>
+                    <span class="tab-btn" id="tabSites">便利サイト</span>
+                </div>
             </div>
             <button class="btn" style="background:#6c757d; font-size: 12px;" onclick="window.logout()">ログアウト</button>
         </div>
         
-        <div class="messages" id="chatMessages"></div>
+        <!-- ① チャット画面用の表示部 -->
+        <div id="chatView" style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
+            <div class="messages" id="chatMessages"></div>
+            <div class="input-area">
+                <input type="file" id="fileInput" accept="image/*,video/*" style="display: none;">
+                <button class="btn-icon" id="attachBtn" title="画像や動画を送る">＋</button>
+                <textarea id="messageInput" placeholder="メッセージを入力..."></textarea>
+                <button class="btn" id="sendBtn">送信</button>
+            </div>
+        </div>
 
-        <div class="input-area">
-            <!-- ファイル選択(非表示) -->
-            <input type="file" id="fileInput" accept="image/*,video/*" style="display: none;">
-            <button class="btn-icon" id="attachBtn" title="画像や動画を送る">＋</button>
-            <textarea id="messageInput" placeholder="メッセージを入力..."></textarea>
-            <button class="btn" id="sendBtn">送信</button>
+        <!-- ② 便利サイト用の表示部 -->
+        <div id="sitesView" style="display: none; flex-direction: column; flex: 1; min-height: 0;">
+            <div class="sites-container" id="sitesContainer">
+                <!-- ここにJSONから読み込んだカードが表示されます -->
+            </div>
         </div>
     </div>
 
@@ -176,7 +196,6 @@
         const introModal = document.getElementById('introModal');
         const settingsModal = document.getElementById('settingsModal');
 
-        // --- 初回説明チェック ---
         if (!getCookie("hasSeenIntro")) {
             introModal.classList.remove('hidden');
         } else {
@@ -224,7 +243,7 @@
                         if (docSnap.data().name !== name) await updateDoc(userRef, { name: name });
                         loginSuccess(id, name, password);
                     } else {
-                        alert("パスワードが違います。");
+                        alert("パスワードが違います。このIDは他の方が使っている可能性があります。");
                     }
                 } else {
                     await setDoc(userRef, { name: name, password: password, isOnline: true, lastSeen: serverTimestamp() });
@@ -248,7 +267,7 @@
             location.reload();
         };
 
-        // --- オンライン管理 ---
+        // --- オンライン状態管理 ---
         async function updateUserPresence() {
             if(!currentUser.id) return;
             await setDoc(doc(db, "users", currentUser.id), { lastSeen: serverTimestamp(), isOnline: true }, { merge: true });
@@ -297,8 +316,8 @@
             if (!file || !currentUser.id) return;
             
             const messageInput = document.getElementById('messageInput');
-            messageInput.value = "送信中...";
-            messageInput.disabled = true;
+            messageInput.value = "アップロード中...";
+            messageInput.disabled = true; // 送信中に入力欄をロック
 
             try {
                 const fRef = storageRef(storage, `uploads/${Date.now()}_${file.name}`);
@@ -312,17 +331,22 @@
                 });
                 updateUserPresence();
             } catch(err) {
-                console.error(err); alert("送信失敗。Storage設定を確認してください。");
+                console.error(err); alert("送信失敗。");
             } finally {
-                messageInput.value = ""; messageInput.disabled = false; e.target.value = "";
+                messageInput.value = ""; 
+                messageInput.disabled = false; // ロック解除
+                e.target.value = "";
             }
         });
 
-        // --- テキスト送信 ---
+        // --- テキスト送信（バグ修正済み） ---
         const chatMessages = document.getElementById('chatMessages');
         const messageInput = document.getElementById('messageInput');
 
         async function sendMessage() {
+            // ★バグ対策: ファイルアップロード中で入力欄がロックされているときは送信処理を行わない
+            if (messageInput.disabled) return; 
+
             const text = messageInput.value.trim();
             if (!text || !currentUser.id) return;
             messageInput.value = ""; messageInput.style.height = "40px";
@@ -346,7 +370,6 @@
                 const msgId = docSnap.id;
                 const isMine = (data.uid === currentUser.id);
 
-                // 日付（時間）のフォーマット
                 let timeString = "送信中...";
                 if (data.createdAt) {
                     const d = data.createdAt.toDate();
@@ -357,10 +380,9 @@
                     timeString = `${month}/${date} ${hours}:${mins}`;
                 }
 
-                // URLを青いボタンに変換する正規表現
+                // URLを青いボタンに変換する
                 const linkedText = data.text ? data.text.replace(/(https?:\/\/[^\s]+)/g, '<br><a href="$1" target="_blank" class="link-btn">🔗 リンクを開く</a><br>') : "";
                 
-                // 画像・動画がある場合のHTML
                 let mediaHtml = "";
                 if (data.fileUrl) {
                     if (data.fileType === 'image') {
@@ -393,13 +415,63 @@
             chatMessages.scrollTop = chatMessages.scrollHeight;
         });
 
-        // 編集・削除・リアクション
         window.deleteMessage = async function(id) { if(confirm("削除しますか？")) await deleteDoc(doc(db, "messages", id)); };
         window.editMessage = async function(id, oldText) {
             const newText = prompt("編集", oldText);
             if(newText && newText !== oldText) await updateDoc(doc(db, "messages", id), { text: newText });
         };
         window.addReaction = async function(id, currentLikes) { await updateDoc(doc(db, "messages", id), { likes: currentLikes + 1 }); };
+
+        // --- タブ切り替えシステム ---
+        const tabChat = document.getElementById('tabChat');
+        const tabSites = document.getElementById('tabSites');
+        const chatView = document.getElementById('chatView');
+        const sitesView = document.getElementById('sitesView');
+        const sitesContainer = document.getElementById('sitesContainer');
+
+        tabChat.addEventListener('click', () => {
+            tabChat.classList.add('active');
+            tabSites.classList.remove('active');
+            chatView.style.display = 'flex';
+            sitesView.style.display = 'none';
+        });
+
+        tabSites.addEventListener('click', () => {
+            tabSites.classList.add('active');
+            tabChat.classList.remove('active');
+            chatView.style.display = 'none';
+            sitesView.style.display = 'flex';
+            loadConvenientSites(); // 便利サイトのデータを読み込む
+        });
+
+        // JSONファイルの読み込み処理
+        async function loadConvenientSites() {
+            sitesContainer.innerHTML = "<p style='padding:20px; color:#888;'>読み込み中...</p>";
+            try {
+                // '便利サイト.json' からデータを取得
+                const res = await fetch('便利サイト.json');
+                if(!res.ok) throw new Error();
+                const data = await res.json();
+                
+                sitesContainer.innerHTML = ""; // 読み込み文字を消去
+                data.forEach(site => {
+                    sitesContainer.innerHTML += `
+                        <div class="site-card">
+                            <div class="site-card-header">
+                                <span class="site-name">${site.name}</span>
+                                <a href="${site.url}" target="_blank" class="link-btn" style="margin:0;">🔗 サイトを開く</a>
+                            </div>
+                            <div class="site-desc">${site.description}</div>
+                        </div>
+                    `;
+                });
+            } catch (e) {
+                sitesContainer.innerHTML = `<p style='padding:20px; color:#f44336;'>
+                    '便利サイト.json' の読み込みに失敗しました。<br>
+                    同じフォルダにファイルが正しく置かれているか確認してください。
+                </p>`;
+            }
+        }
 
         // --- モバイルメニュー ---
         const sidebar = document.getElementById('sidebar');
