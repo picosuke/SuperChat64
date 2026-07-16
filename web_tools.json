@@ -1,0 +1,27 @@
+[
+  {
+    "name": "ファイルなう",
+    "url": "https://d.kuku.lu/",
+    "description": "ファイルがリンクになります。見せたいものはここから見せましょう。"
+  },
+  {
+    "name": "パクリシード",
+    "url": "https://direct-preview-68f19060e788850138c16373.monaca.education/",
+    "description": "いろんなサイトがまとまってる、ミライ系は全部同じ。"
+  },
+  {
+    "name": "PicoSite",
+    "url": "https://direct-preview-67d128d0e788859d1c582656.monaca.education/",
+    "description": "過去に管理者が作ったサイト。意外と使える？"
+  },
+  {
+    "name": "PicoSite2",
+    "url": "https://picosuke.github.io/PicoSite2/",
+    "description": "使えないことはないがチャットは推奨しないぜ"
+  },
+  {
+    "name": "リンク短縮",
+    "url": "https://x.gd/",
+    "description": "よく使う、リンクが短くなり使いやすい"
+  },
+]
