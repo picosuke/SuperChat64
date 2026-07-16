@@ -8,12 +8,8 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { display: flex; height: 100vh; background-color: #f0f2f5; overflow: hidden; }
 
-        /* 左サイドバー（メンバー・検索） */
-        .sidebar { 
-            width: 250px; background: #fff; border-right: 1px solid #ddd; 
-            display: flex; flex-direction: column; transition: transform 0.3s ease;
-            z-index: 100;
-        }
+        /* 左サイドバー */
+        .sidebar { width: 250px; background: #fff; border-right: 1px solid #ddd; display: flex; flex-direction: column; transition: transform 0.3s ease; z-index: 100; }
         .search-box { padding: 10px; border-bottom: 1px solid #ddd; }
         .search-box input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; outline: none; }
         .member-list { flex: 1; overflow-y: auto; padding: 10px; }
@@ -23,16 +19,12 @@
         .status.offline { background: #ccc; }
         .last-login { font-size: 10px; color: #888; }
 
-        /* メインチャットエリア */
+        /* メインチャット */
         .chat-area { flex: 1; display: flex; flex-direction: column; position: relative; min-width: 0; }
-        .chat-header { 
-            padding: 15px; background: #fff; border-bottom: 1px solid #ddd; 
-            display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        }
+        .chat-header { padding: 15px; background: #fff; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
         .menu-btn { display: none; font-size: 20px; background: none; border: none; cursor: pointer; margin-right: 10px; }
         .header-title { display: flex; align-items: center; font-weight: bold; }
 
-        /* メッセージ */
         .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
         .msg-wrap { display: flex; flex-direction: column; max-width: 85%; }
         .msg-wrap.mine { align-self: flex-end; align-items: flex-end; }
@@ -41,60 +33,50 @@
         .msg-wrap.mine .message { background: #dcf8c6; } 
         .msg-actions { font-size: 11px; color: #888; margin-top: 4px; display: flex; gap: 10px; cursor: pointer; }
         .reaction { background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 2px 6px; font-size: 12px; cursor: pointer; margin-top: 5px; }
-        .reaction:hover { background: #f0f0f0; }
 
-        /* 入力エリア */
         .input-area { background: #fff; padding: 10px; border-top: 1px solid #ddd; display: flex; gap: 8px; align-items: flex-end; }
-        .input-area textarea { flex: 1; resize: none; padding: 10px; border: 1px solid #ccc; border-radius: 20px; height: 40px; max-height: 100px; outline: none; line-height: 1.4;}
+        .input-area textarea { flex: 1; resize: none; padding: 10px; border: 1px solid #ccc; border-radius: 20px; height: 40px; max-height: 100px; outline: none; }
         .btn { padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 20px; cursor: pointer; font-weight: bold;}
-        .btn:active { opacity: 0.8; }
         .btn-icon { background: none; color: #555; font-size: 22px; padding: 5px; border:none; cursor: pointer; }
 
         /* モーダル */
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background: #fff; padding: 25px; border-radius: 12px; width: 90%; max-width: 320px; display: flex; flex-direction: column; gap: 12px; text-align: center; }
         .modal.hidden { display: none; }
-        .modal input { padding: 10px; border: 1px solid #ccc; border-radius: 6px; width: 100%; }
-        .google-btn { background: #fff; color: #333; border: 1px solid #ccc; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; display: flex; justify-content: center; align-items: center; gap: 10px;}
-        .google-btn img { width: 18px; }
-        .divider { font-size: 12px; color: #888; margin: 10px 0; }
+        .modal input { padding: 10px; border: 1px solid #ccc; border-radius: 6px; width: 100%; font-size: 16px;}
+        .help-text { font-size: 11px; color: #888; text-align: left; line-height: 1.4; margin-top: -5px; }
 
-        /* モバイル対応（画面幅768px以下） */
         @media (max-width: 768px) {
             .sidebar { position: absolute; height: 100%; transform: translateX(-100%); }
             .sidebar.open { transform: translateX(0); box-shadow: 2px 0 5px rgba(0,0,0,0.2); }
             .menu-btn { display: block; }
-            .msg-wrap { max-width: 90%; }
         }
     </style>
 </head>
 <body>
 
-    <!-- ログイン・設定モーダル -->
+    <!-- ログインモーダル (自前認証) -->
     <div id="settingsModal" class="modal">
         <div class="modal-content">
             <h3>チャットに参加</h3>
             
-            <button class="google-btn" id="googleLoginBtn">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="G"> Googleでログイン
-            </button>
+            <input type="text" id="inputName" placeholder="名前 (例: 太郎)" required>
+            <input type="text" id="inputId" placeholder="ID (例: user001)" required>
+            <input type="password" id="inputPassword" placeholder="パスワード" required>
             
-            <div class="divider">または ゲストとして参加 (Cookie保存)</div>
-            
-            <input type="text" id="inputName" placeholder="名前 (必須)">
-            <input type="text" id="inputNumber" placeholder="番号 (例: 001)">
-            <button class="btn" id="guestJoinBtn">ゲスト参加</button>
+            <div class="help-text">
+                ※初めてのIDを使うと自動で登録されます。<br>
+                ※同じIDを使う場合はパスワードが必要です。
+            </div>
+
+            <button class="btn" id="joinBtn" style="margin-top: 10px;">ログイン / 登録</button>
         </div>
     </div>
 
-    <!-- 左サイドバー（メンバー一覧） -->
+    <!-- 左サイドバー -->
     <div class="sidebar" id="sidebar">
-        <div class="search-box">
-            <input type="text" id="searchInput" placeholder="番号か名前で検索...">
-        </div>
-        <div class="member-list" id="memberList">
-            <!-- ここに自動で全ユーザーが表示されます -->
-        </div>
+        <div class="search-box"><input type="text" id="searchInput" placeholder="IDか名前で検索..."></div>
+        <div class="member-list" id="memberList"></div>
     </div>
 
     <!-- メインチャット -->
@@ -110,22 +92,17 @@
         <div class="messages" id="chatMessages"></div>
 
         <div class="input-area">
-            <button class="btn-icon" title="画像添付 (準備中)">📎</button>
+            <button class="btn-icon" title="画像">📎</button>
             <textarea id="messageInput" placeholder="メッセージを入力..."></textarea>
             <button class="btn" id="sendBtn">送信</button>
         </div>
     </div>
 
-    <!-- ==========================================
-         Firebase & JavaScript ロジック
-    =========================================== -->
     <script type="module">
-        // 1. Firebaseの読み込み (Authを追加)
+        // Firebaseの読み込み (Authは削除)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, deleteDoc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, deleteDoc, updateDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-        // 2. Firebase設定
         const firebaseConfig = {
             apiKey: "AIzaSyAM8INEj8WkLnOlXvx8swEAPTuX3u2_kt0",
             authDomain: "superchat64-87af5.firebaseapp.com",
@@ -138,13 +115,10 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const auth = getAuth(app);
-        
         const msgRef = collection(db, "messages");
-        const usersRef = collection(db, "users"); // 全ユーザーリスト用
-
+        
         // 現在のユーザー情報
-        let currentUser = { uid: null, name: "", number: "", isGuest: true };
+        let currentUser = { id: null, name: "" };
 
         // --- Cookie操作 ---
         function getCookie(name) {
@@ -152,101 +126,109 @@
             return matches ? decodeURIComponent(matches[1]) : undefined;
         }
         function setCookie(name, value) {
-            document.cookie = `${name}=${encodeURIComponent(value)}; max-age=2592000; path=/`;
+            document.cookie = `${name}=${encodeURIComponent(value)}; max-age=2592000; path=/`; // 30日保存
         }
 
-        // --- 認証・ログイン処理 ---
         const settingsModal = document.getElementById('settingsModal');
 
-        // 1. ログイン状態の監視
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                // Googleログイン済みの場合
-                currentUser.uid = user.uid;
-                currentUser.name = user.displayName || "Googleユーザー";
-                currentUser.number = "G-" + user.uid.substring(0, 4); // 仮の番号
-                currentUser.isGuest = false;
-                settingsModal.classList.add('hidden');
-                await updateUserPresence();
-            } else {
-                // 未ログインの場合、Cookieを確認
-                const cName = getCookie("chatName");
-                const cNum = getCookie("chatNumber");
-                const cUid = getCookie("chatUid");
+        // --- 自動ログイン処理 ---
+        async function checkAutoLogin() {
+            const cId = getCookie("chatId");
+            const cPass = getCookie("chatPass");
+            
+            if (cId && cPass) {
+                // Cookieに保存されたIDとパスワードでデータベースを照合
+                const userRef = doc(db, "users", cId);
+                const docSnap = await getDoc(userRef);
                 
-                if (cName && cNum && cUid) {
-                    currentUser.uid = cUid;
-                    currentUser.name = cName;
-                    currentUser.number = cNum;
-                    currentUser.isGuest = true;
+                if (docSnap.exists() && docSnap.data().password === cPass) {
+                    // パスワードが一致したらログイン成功
+                    currentUser = { id: cId, name: docSnap.data().name };
                     settingsModal.classList.add('hidden');
-                    await updateUserPresence();
+                    updateUserPresence();
                 } else {
+                    // パスワードが変わっているなどエラーの場合はモーダルを表示
                     settingsModal.classList.remove('hidden');
                 }
-            }
-        });
-
-        // 2. Googleログインボタン
-        document.getElementById('googleLoginBtn').addEventListener('click', async () => {
-            const provider = new GoogleAuthProvider();
-            try {
-                await signInWithPopup(auth, provider);
-            } catch (error) {
-                alert("ログインに失敗しました: " + error.message);
-            }
-        });
-
-        // 3. ゲスト参加ボタン
-        document.getElementById('guestJoinBtn').addEventListener('click', async () => {
-            const name = document.getElementById('inputName').value.trim();
-            const number = document.getElementById('inputNumber').value.trim() || "000";
-            if(name) {
-                const uid = "guest_" + Date.now(); // ゲスト用の仮ID
-                setCookie("chatName", name);
-                setCookie("chatNumber", number);
-                setCookie("chatUid", uid);
-                
-                currentUser = { uid, name, number, isGuest: true };
-                settingsModal.classList.add('hidden');
-                await updateUserPresence();
             } else {
-                alert("名前を入力してください");
+                settingsModal.classList.remove('hidden');
+            }
+        }
+        checkAutoLogin(); // ページ読み込み時に実行
+
+        // --- ログイン / 新規登録 ボタン処理 ---
+        document.getElementById('joinBtn').addEventListener('click', async () => {
+            const name = document.getElementById('inputName').value.trim();
+            const id = document.getElementById('inputId').value.trim();
+            const password = document.getElementById('inputPassword').value.trim();
+
+            if(!name || !id || !password) {
+                alert("名前、ID、パスワードをすべて入力してください");
+                return;
+            }
+
+            // usersコレクションの中の、入力されたIDを探す
+            const userRef = doc(db, "users", id); 
+            try {
+                const docSnap = await getDoc(userRef);
+                
+                if (docSnap.exists()) {
+                    // 【2回目以降】IDがすでに存在する場合：パスワードチェック
+                    const data = docSnap.data();
+                    if (data.password === password) {
+                        // パスワード一致！名前が変わっていれば更新してログイン
+                        if (data.name !== name) await updateDoc(userRef, { name: name });
+                        loginSuccess(id, name, password);
+                    } else {
+                        // パスワード不一致（なりすまし防止）
+                        alert("パスワードが違います。別のIDを使うか、正しいパスワードを入力してください。");
+                    }
+                } else {
+                    // 【初回】IDが存在しない場合：新規登録
+                    await setDoc(userRef, {
+                        name: name,
+                        password: password, // パスワードを登録
+                        isOnline: true,
+                        lastSeen: serverTimestamp()
+                    });
+                    loginSuccess(id, name, password);
+                }
+            } catch (e) {
+                console.error(e);
+                alert("通信エラーが発生しました。");
             }
         });
 
-        // 4. ログアウト
-        window.logout = async function() {
-            if(!currentUser.isGuest) {
-                await signOut(auth);
-            }
-            // Cookie削除
-            document.cookie = "chatName=; max-age=0; path=/";
-            document.cookie = "chatNumber=; max-age=0; path=/";
-            document.cookie = "chatUid=; max-age=0; path=/";
+        // ログイン成功時の処理
+        function loginSuccess(id, name, password) {
+            currentUser = { id: id, name: name };
+            setCookie("chatId", id);
+            setCookie("chatPass", password); // 次回の自動ログインのためにパス保存
+            settingsModal.classList.add('hidden');
+            updateUserPresence();
+        }
+
+        // ログアウト処理
+        window.logout = function() {
+            if(currentUser.id) setDoc(doc(db, "users", currentUser.id), { isOnline: false, lastSeen: serverTimestamp() }, { merge: true });
+            document.cookie = "chatId=; max-age=0; path=/";
+            document.cookie = "chatPass=; max-age=0; path=/";
             location.reload();
         };
 
-        // --- ユーザー状態（オンライン）の記録 ---
+        // --- オンライン状態管理 ---
         async function updateUserPresence() {
-            if(!currentUser.uid) return;
-            // usersコレクションに自分の情報を保存/更新
-            await setDoc(doc(db, "users", currentUser.uid), {
-                name: currentUser.name,
-                number: currentUser.number,
+            if(!currentUser.id) return;
+            await setDoc(doc(db, "users", currentUser.id), {
                 lastSeen: serverTimestamp(),
                 isOnline: true
             }, { merge: true });
         }
-
-        // ブラウザを閉じる時にオフラインにする
         window.addEventListener("beforeunload", () => {
-            if(currentUser.uid) {
-                setDoc(doc(db, "users", currentUser.uid), { isOnline: false, lastSeen: serverTimestamp() }, { merge: true });
-            }
+            if(currentUser.id) setDoc(doc(db, "users", currentUser.id), { isOnline: false, lastSeen: serverTimestamp() }, { merge: true });
         });
 
-        // --- メンバー一覧の取得と表示（検索含む） ---
+        // --- メンバー一覧（左サイドバー） ---
         const memberList = document.getElementById('memberList');
         const searchInput = document.getElementById('searchInput');
         let allUsers = [];
@@ -254,57 +236,51 @@
         onSnapshot(collection(db, "users"), (snapshot) => {
             allUsers = [];
             snapshot.forEach(docSnap => {
-                allUsers.push(docSnap.data());
+                // データを取得（ドキュメントのIDがユーザーID）
+                allUsers.push({ id: docSnap.id, ...docSnap.data() });
             });
-            renderMembers(); // 描画
+            renderMembers();
         });
 
         function renderMembers() {
             const filterText = searchInput.value.toLowerCase();
             memberList.innerHTML = "";
-            
-            // 検索フィルター
             const filtered = allUsers.filter(u => 
                 (u.name && u.name.toLowerCase().includes(filterText)) || 
-                (u.number && u.number.toLowerCase().includes(filterText))
+                (u.id && u.id.toLowerCase().includes(filterText))
             );
 
             filtered.forEach(u => {
                 const statusClass = u.isOnline ? "online" : "offline";
                 const timeText = u.isOnline ? "オンライン" : "オフライン";
-                
                 memberList.innerHTML += `
                     <div class="member">
-                        <div><span class="status ${statusClass}"></span> ${u.name} <span style="color:#888; font-size:12px;">(#${u.number})</span></div>
+                        <div><span class="status ${statusClass}"></span> ${u.name} <span style="color:#888; font-size:12px;">(@${u.id})</span></div>
                         <div class="last-login">${timeText}</div>
-                    </div>
-                `;
+                    </div>`;
             });
         }
         searchInput.addEventListener('input', renderMembers);
 
-
-        // --- チャットの送受信処理 ---
+        // --- メッセージ送受信処理 ---
         const chatMessages = document.getElementById('chatMessages');
         const messageInput = document.getElementById('messageInput');
 
         async function sendMessage() {
             const text = messageInput.value.trim();
-            if (!text || !currentUser.uid) return;
-
+            if (!text || !currentUser.id) return;
             messageInput.value = ""; 
             messageInput.style.height = "40px";
 
             try {
                 await addDoc(msgRef, {
-                    uid: currentUser.uid,
+                    uid: currentUser.id, // IDをメッセージと紐付ける
                     name: currentUser.name,
-                    number: currentUser.number,
                     text: text,
                     createdAt: serverTimestamp(),
                     likes: 0
                 });
-                updateUserPresence(); // 発言時もオンライン更新
+                updateUserPresence();
             } catch (e) {
                 console.error(e);
             }
@@ -312,38 +288,35 @@
 
         document.getElementById('sendBtn').addEventListener('click', sendMessage);
         messageInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-            }
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
         });
         messageInput.addEventListener('input', () => {
             messageInput.style.height = "40px";
             messageInput.style.height = (messageInput.scrollHeight) + "px";
         });
 
-        // リアルタイム受信
+        // メッセージ受信
         const q = query(msgRef, orderBy("createdAt", "asc"));
         onSnapshot(q, (snapshot) => {
             chatMessages.innerHTML = "";
             snapshot.forEach((docSnap) => {
                 const data = docSnap.data();
-                const id = docSnap.id;
-                const isMine = (data.uid === currentUser.uid); // uidで自分の発言か判定
+                const msgId = docSnap.id;
+                const isMine = (data.uid === currentUser.id); // 自分のIDと一致するか
 
                 const linkedText = data.text ? data.text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>') : "";
                 
                 const wrap = document.createElement('div');
                 wrap.className = `msg-wrap ${isMine ? 'mine' : ''}`;
                 wrap.innerHTML = `
-                    <div class="msg-info">${data.name} (#${data.number})</div>
+                    <div class="msg-info">${data.name} (@${data.uid})</div>
                     <div class="message">${linkedText.replace(/\n/g, '<br>')}
-                        <button class="reaction" onclick="window.addReaction('${id}', ${data.likes || 0})">👍 <span>${data.likes || 0}</span></button>
+                        <button class="reaction" onclick="window.addReaction('${msgId}', ${data.likes || 0})">👍 <span>${data.likes || 0}</span></button>
                     </div>
                     ${isMine ? `
                     <div class="msg-actions">
-                        <span onclick="window.editMessage('${id}', '${data.text.replace(/\n/g, '\\n')}')">編集</span>
-                        <span onclick="window.deleteMessage('${id}')">削除</span>
+                        <span onclick="window.editMessage('${msgId}', '${data.text.replace(/\n/g, '\\n')}')">編集</span>
+                        <span onclick="window.deleteMessage('${msgId}')">削除</span>
                     </div>` : ''}
                 `;
                 chatMessages.appendChild(wrap);
@@ -351,33 +324,23 @@
             chatMessages.scrollTop = chatMessages.scrollHeight;
         });
 
-        // 削除・編集・スタンプ
-        window.deleteMessage = async function(id) {
-            if(confirm("削除しますか？")) await deleteDoc(doc(db, "messages", id));
-        };
+        // メッセージの削除・編集・スタンプ
+        window.deleteMessage = async function(id) { if(confirm("削除しますか？")) await deleteDoc(doc(db, "messages", id)); };
         window.editMessage = async function(id, oldText) {
             const newText = prompt("編集", oldText);
             if(newText && newText !== oldText) await updateDoc(doc(db, "messages", id), { text: newText });
         };
-        window.addReaction = async function(id, currentLikes) {
-            await updateDoc(doc(db, "messages", id), { likes: currentLikes + 1 });
-        };
+        window.addReaction = async function(id, currentLikes) { await updateDoc(doc(db, "messages", id), { likes: currentLikes + 1 }); };
 
-        // --- モバイル用 ハンバーガーメニュー開閉 ---
+        // --- モバイルメニュー ---
         const sidebar = document.getElementById('sidebar');
         const menuBtn = document.getElementById('menuBtn');
         const chatArea = document.getElementById('chatArea');
 
-        menuBtn.addEventListener('click', () => {
-            sidebar.classList.toggle('open');
-        });
-        // チャット部分を触ったらメニューを閉じる
+        menuBtn.addEventListener('click', () => sidebar.classList.toggle('open'));
         chatArea.addEventListener('click', (e) => {
-            if(sidebar.classList.contains('open') && e.target !== menuBtn) {
-                sidebar.classList.remove('open');
-            }
+            if(sidebar.classList.contains('open') && e.target !== menuBtn) sidebar.classList.remove('open');
         });
-
     </script>
 </body>
 </html>
