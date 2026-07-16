@@ -448,8 +448,8 @@
         async function loadConvenientSites() {
             sitesContainer.innerHTML = "<p style='padding:20px; color:#888;'>読み込み中...</p>";
             try {
-                // '便利サイト.json' からデータを取得
-                const res = await fetch('便利サイト.json');
+                // 'web_tools.json' からデータを取得
+                const res = await fetch('web_tools.json');
                 if(!res.ok) throw new Error();
                 const data = await res.json();
                 
@@ -467,7 +467,7 @@
                 });
             } catch (e) {
                 sitesContainer.innerHTML = `<p style='padding:20px; color:#f44336;'>
-                    '便利サイト.json' の読み込みに失敗しました。<br>
+                    'web_tools.json' の読み込みに失敗しました。<br>
                     同じフォルダにファイルが正しく置かれているか確認してください。
                 </p>`;
             }
