@@ -15,8 +15,8 @@
         .member-list { flex: 1; overflow-y: auto; padding: 10px; }
         .member { display: flex; align-items: center; justify-content: space-between; padding: 10px; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
         .status { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px;}
-        .status.online { background: #4caf50; }
-        .status.offline { background: #ccc; }
+        .status.online { background: #4caf50; } /* オンラインは緑 */
+        .status.offline { background: #f44336; } /* オフラインは赤 */
         .last-login { font-size: 10px; color: #888; }
 
         /* メインチャット */
@@ -25,26 +25,46 @@
         .menu-btn { display: none; font-size: 20px; background: none; border: none; cursor: pointer; margin-right: 10px; }
         .header-title { display: flex; align-items: center; font-weight: bold; }
 
+        /* メッセージ表示部 */
         .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
         .msg-wrap { display: flex; flex-direction: column; max-width: 85%; }
         .msg-wrap.mine { align-self: flex-end; align-items: flex-end; }
-        .msg-info { font-size: 12px; color: #666; margin-bottom: 4px; }
+        .msg-info { font-size: 12px; color: #666; margin-bottom: 4px; display: flex; align-items: baseline; gap: 8px;}
+        .msg-time { font-size: 10px; color: #999; } /* 時間のスタイル */
         .message { background: #fff; padding: 10px 15px; border-radius: 15px; position: relative; word-break: break-all; box-shadow: 0 1px 2px rgba(0,0,0,0.1); line-height: 1.4;}
         .msg-wrap.mine .message { background: #dcf8c6; } 
         .msg-actions { font-size: 11px; color: #888; margin-top: 4px; display: flex; gap: 10px; cursor: pointer; }
         .reaction { background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 2px 6px; font-size: 12px; cursor: pointer; margin-top: 5px; }
+        
+        /* リンクのボタン化 */
+        .link-btn { display: inline-block; margin: 5px 0; padding: 6px 12px; background-color: #007bff; color: white !important; text-decoration: none; border-radius: 6px; font-size: 12px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .link-btn:active { transform: translateY(1px); box-shadow: none; }
 
+        /* メディア(画像・動画) */
+        .media-container { margin-top: 5px; }
+        .media-container img, .media-container video { max-width: 100%; border-radius: 10px; cursor: pointer; max-height: 250px;}
+
+        /* 入力エリア */
         .input-area { background: #fff; padding: 10px; border-top: 1px solid #ddd; display: flex; gap: 8px; align-items: flex-end; }
         .input-area textarea { flex: 1; resize: none; padding: 10px; border: 1px solid #ccc; border-radius: 20px; height: 40px; max-height: 100px; outline: none; }
         .btn { padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 20px; cursor: pointer; font-weight: bold;}
-        .btn-icon { background: none; color: #555; font-size: 22px; padding: 5px; border:none; cursor: pointer; }
+        .btn-icon { background: none; color: #555; font-size: 26px; padding: 0 5px; border:none; cursor: pointer; font-weight: bold;}
 
-        /* モーダル */
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: #fff; padding: 25px; border-radius: 12px; width: 90%; max-width: 320px; display: flex; flex-direction: column; gap: 12px; text-align: center; }
+        /* モーダル共通 */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: #fff; padding: 25px; border-radius: 12px; width: 90%; max-width: 350px; display: flex; flex-direction: column; gap: 12px; }
         .modal.hidden { display: none; }
-        .modal input { padding: 10px; border: 1px solid #ccc; border-radius: 6px; width: 100%; font-size: 16px;}
+        
+        /* ログインモーダル */
+        .login-content { text-align: center; }
+        .login-content input { padding: 10px; border: 1px solid #ccc; border-radius: 6px; width: 100%; font-size: 16px;}
         .help-text { font-size: 11px; color: #888; text-align: left; line-height: 1.4; margin-top: -5px; }
+
+        /* 初回説明モーダル */
+        .intro-content { font-size: 14px; line-height: 1.6; color: #333; max-height: 80vh; overflow-y: auto;}
+        .intro-content h3 { text-align: center; color: #007bff; margin-bottom: 10px;}
+        .intro-content ul { padding-left: 20px; margin-bottom: 10px; }
+        .intro-content li { margin-bottom: 5px; }
 
         @media (max-width: 768px) {
             .sidebar { position: absolute; height: 100%; transform: translateX(-100%); }
@@ -55,18 +75,40 @@
 </head>
 <body>
 
-    <!-- ログインモーダル (自前認証) -->
-    <div id="settingsModal" class="modal">
-        <div class="modal-content">
+    <!-- 初回説明モーダル -->
+    <div id="introModal" class="modal hidden">
+        <div class="modal-content intro-content">
+            <h3>ようこそ！チャットの使い方</h3>
+            <p>このサイトはみんなで話せるグループチャットです。</p>
+            <hr style="border:0; border-top:1px solid #eee; margin: 10px 0;">
+            <b>🔐 安全なログインシステム</b>
+            <ul>
+                <li><b style="color:#d9534f;">IDは一度決めたら変更できません。</b></li>
+                <li>初めて入力するIDなら、自動でパスワードが登録されます。</li>
+                <li>2回目からは、同じIDとパスワードを入れることで本人として入れます。</li>
+            </ul>
+            <b>💬 便利な機能</b>
+            <ul>
+                <li><b>[＋]ボタン</b> を押すと画像や動画を送れます。</li>
+                <li><b>URL</b> をそのまま送ると、押しやすいボタンに変わります！</li>
+                <li>オフラインの人はリストで<span style="color:#f44336; font-weight:bold;">赤色</span>で表示されます。</li>
+            </ul>
+            <button class="btn" id="closeIntroBtn" style="width:100%; margin-top: 10px;">理解してはじめる</button>
+        </div>
+    </div>
+
+    <!-- ログインモーダル -->
+    <div id="settingsModal" class="modal hidden">
+        <div class="modal-content login-content">
             <h3>チャットに参加</h3>
-            
             <input type="text" id="inputName" placeholder="名前 (例: 太郎)" required>
             <input type="text" id="inputId" placeholder="ID (例: user001)" required>
             <input type="password" id="inputPassword" placeholder="パスワード" required>
             
             <div class="help-text">
-                ※初めてのIDを使うと自動で登録されます。<br>
-                ※同じIDを使う場合はパスワードが必要です。
+                <b style="color:#d9534f;">※IDは一度決めたら変更できません。</b><br>
+                ※初めてのIDを使うとパスワードが自動登録されます。<br>
+                ※同じIDを使う場合は登録時のパスワードが必要です。
             </div>
 
             <button class="btn" id="joinBtn" style="margin-top: 10px;">ログイン / 登録</button>
@@ -92,16 +134,19 @@
         <div class="messages" id="chatMessages"></div>
 
         <div class="input-area">
-            <button class="btn-icon" title="画像">📎</button>
+            <!-- ファイル選択(非表示) -->
+            <input type="file" id="fileInput" accept="image/*,video/*" style="display: none;">
+            <button class="btn-icon" id="attachBtn" title="画像や動画を送る">＋</button>
             <textarea id="messageInput" placeholder="メッセージを入力..."></textarea>
             <button class="btn" id="sendBtn">送信</button>
         </div>
     </div>
 
+    <!-- Firebase & JS -->
     <script type="module">
-        // Firebaseの読み込み (Authは削除)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, deleteDoc, updateDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAM8INEj8WkLnOlXvx8swEAPTuX3u2_kt0",
@@ -115,140 +160,118 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const storage = getStorage(app); 
         const msgRef = collection(db, "messages");
         
-        // 現在のユーザー情報
         let currentUser = { id: null, name: "" };
 
-        // --- Cookie操作 ---
         function getCookie(name) {
             let matches = document.cookie.match(new RegExp("(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"));
             return matches ? decodeURIComponent(matches[1]) : undefined;
         }
         function setCookie(name, value) {
-            document.cookie = `${name}=${encodeURIComponent(value)}; max-age=2592000; path=/`; // 30日保存
+            document.cookie = `${name}=${encodeURIComponent(value)}; max-age=2592000; path=/`;
         }
 
+        const introModal = document.getElementById('introModal');
         const settingsModal = document.getElementById('settingsModal');
 
-        // --- 自動ログイン処理 ---
+        // --- 初回説明チェック ---
+        if (!getCookie("hasSeenIntro")) {
+            introModal.classList.remove('hidden');
+        } else {
+            checkAutoLogin();
+        }
+
+        document.getElementById('closeIntroBtn').addEventListener('click', () => {
+            setCookie("hasSeenIntro", "true");
+            introModal.classList.add('hidden');
+            checkAutoLogin();
+        });
+
+        // --- 自動ログイン ---
         async function checkAutoLogin() {
             const cId = getCookie("chatId");
             const cPass = getCookie("chatPass");
             
             if (cId && cPass) {
-                // Cookieに保存されたIDとパスワードでデータベースを照合
                 const userRef = doc(db, "users", cId);
                 const docSnap = await getDoc(userRef);
-                
                 if (docSnap.exists() && docSnap.data().password === cPass) {
-                    // パスワードが一致したらログイン成功
                     currentUser = { id: cId, name: docSnap.data().name };
-                    settingsModal.classList.add('hidden');
                     updateUserPresence();
                 } else {
-                    // パスワードが変わっているなどエラーの場合はモーダルを表示
                     settingsModal.classList.remove('hidden');
                 }
             } else {
                 settingsModal.classList.remove('hidden');
             }
         }
-        checkAutoLogin(); // ページ読み込み時に実行
 
-        // --- ログイン / 新規登録 ボタン処理 ---
+        // --- ログイン処理 ---
         document.getElementById('joinBtn').addEventListener('click', async () => {
             const name = document.getElementById('inputName').value.trim();
             const id = document.getElementById('inputId').value.trim();
             const password = document.getElementById('inputPassword').value.trim();
 
-            if(!name || !id || !password) {
-                alert("名前、ID、パスワードをすべて入力してください");
-                return;
-            }
+            if(!name || !id || !password) return alert("全て入力してください");
 
-            // usersコレクションの中の、入力されたIDを探す
             const userRef = doc(db, "users", id); 
             try {
                 const docSnap = await getDoc(userRef);
-                
                 if (docSnap.exists()) {
-                    // 【2回目以降】IDがすでに存在する場合：パスワードチェック
-                    const data = docSnap.data();
-                    if (data.password === password) {
-                        // パスワード一致！名前が変わっていれば更新してログイン
-                        if (data.name !== name) await updateDoc(userRef, { name: name });
+                    if (docSnap.data().password === password) {
+                        if (docSnap.data().name !== name) await updateDoc(userRef, { name: name });
                         loginSuccess(id, name, password);
                     } else {
-                        // パスワード不一致（なりすまし防止）
-                        alert("パスワードが違います。正しいパスワードを入力してください。");
+                        alert("パスワードが違います。");
                     }
                 } else {
-                    // 【初回】IDが存在しない場合：新規登録
-                    await setDoc(userRef, {
-                        name: name,
-                        password: password, // パスワードを登録
-                        isOnline: true,
-                        lastSeen: serverTimestamp()
-                    });
+                    await setDoc(userRef, { name: name, password: password, isOnline: true, lastSeen: serverTimestamp() });
                     loginSuccess(id, name, password);
                 }
             } catch (e) {
-                console.error(e);
-                alert("通信エラーが発生しました。");
+                console.error(e); alert("通信エラー");
             }
         });
 
-        // ログイン成功時の処理
         function loginSuccess(id, name, password) {
             currentUser = { id: id, name: name };
-            setCookie("chatId", id);
-            setCookie("chatPass", password); // 次回の自動ログインのためにパス保存
+            setCookie("chatId", id); setCookie("chatPass", password);
             settingsModal.classList.add('hidden');
             updateUserPresence();
         }
 
-        // ログアウト処理
         window.logout = function() {
             if(currentUser.id) setDoc(doc(db, "users", currentUser.id), { isOnline: false, lastSeen: serverTimestamp() }, { merge: true });
-            document.cookie = "chatId=; max-age=0; path=/";
-            document.cookie = "chatPass=; max-age=0; path=/";
+            document.cookie = "chatId=; max-age=0; path=/"; document.cookie = "chatPass=; max-age=0; path=/";
             location.reload();
         };
 
-        // --- オンライン状態管理 ---
+        // --- オンライン管理 ---
         async function updateUserPresence() {
             if(!currentUser.id) return;
-            await setDoc(doc(db, "users", currentUser.id), {
-                lastSeen: serverTimestamp(),
-                isOnline: true
-            }, { merge: true });
+            await setDoc(doc(db, "users", currentUser.id), { lastSeen: serverTimestamp(), isOnline: true }, { merge: true });
         }
         window.addEventListener("beforeunload", () => {
             if(currentUser.id) setDoc(doc(db, "users", currentUser.id), { isOnline: false, lastSeen: serverTimestamp() }, { merge: true });
         });
 
-        // --- メンバー一覧（左サイドバー） ---
+        // --- メンバー一覧描画 ---
         const memberList = document.getElementById('memberList');
         const searchInput = document.getElementById('searchInput');
         let allUsers = [];
 
         onSnapshot(collection(db, "users"), (snapshot) => {
             allUsers = [];
-            snapshot.forEach(docSnap => {
-                // データを取得（ドキュメントのIDがユーザーID）
-                allUsers.push({ id: docSnap.id, ...docSnap.data() });
-            });
+            snapshot.forEach(docSnap => allUsers.push({ id: docSnap.id, ...docSnap.data() }));
             renderMembers();
         });
 
         function renderMembers() {
             const filterText = searchInput.value.toLowerCase();
             memberList.innerHTML = "";
-            const filtered = allUsers.filter(u => 
-                (u.name && u.name.toLowerCase().includes(filterText)) || 
-                (u.id && u.id.toLowerCase().includes(filterText))
-            );
+            const filtered = allUsers.filter(u => (u.name && u.name.toLowerCase().includes(filterText)) || (u.id && u.id.toLowerCase().includes(filterText)));
 
             filtered.forEach(u => {
                 const statusClass = u.isOnline ? "online" : "offline";
@@ -262,55 +285,101 @@
         }
         searchInput.addEventListener('input', renderMembers);
 
-        // --- メッセージ送受信処理 ---
+        // --- 画像送信（＋ボタン） ---
+        const fileInput = document.getElementById('fileInput');
+        document.getElementById('attachBtn').addEventListener('click', () => {
+            if(!currentUser.id) return alert("ログインしてください");
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file || !currentUser.id) return;
+            
+            const messageInput = document.getElementById('messageInput');
+            messageInput.value = "送信中...";
+            messageInput.disabled = true;
+
+            try {
+                const fRef = storageRef(storage, `uploads/${Date.now()}_${file.name}`);
+                await uploadBytes(fRef, file);
+                const url = await getDownloadURL(fRef);
+                
+                await addDoc(msgRef, {
+                    uid: currentUser.id, name: currentUser.name, text: "", fileUrl: url,
+                    fileType: file.type.startsWith('image/') ? 'image' : 'video',
+                    createdAt: serverTimestamp(), likes: 0
+                });
+                updateUserPresence();
+            } catch(err) {
+                console.error(err); alert("送信失敗。Storage設定を確認してください。");
+            } finally {
+                messageInput.value = ""; messageInput.disabled = false; e.target.value = "";
+            }
+        });
+
+        // --- テキスト送信 ---
         const chatMessages = document.getElementById('chatMessages');
         const messageInput = document.getElementById('messageInput');
 
         async function sendMessage() {
             const text = messageInput.value.trim();
             if (!text || !currentUser.id) return;
-            messageInput.value = ""; 
-            messageInput.style.height = "40px";
+            messageInput.value = ""; messageInput.style.height = "40px";
 
             try {
-                await addDoc(msgRef, {
-                    uid: currentUser.id, // IDをメッセージと紐付ける
-                    name: currentUser.name,
-                    text: text,
-                    createdAt: serverTimestamp(),
-                    likes: 0
-                });
+                await addDoc(msgRef, { uid: currentUser.id, name: currentUser.name, text: text, createdAt: serverTimestamp(), likes: 0 });
                 updateUserPresence();
-            } catch (e) {
-                console.error(e);
-            }
+            } catch (e) { console.error(e); }
         }
 
         document.getElementById('sendBtn').addEventListener('click', sendMessage);
-        messageInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-        });
-        messageInput.addEventListener('input', () => {
-            messageInput.style.height = "40px";
-            messageInput.style.height = (messageInput.scrollHeight) + "px";
-        });
+        messageInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+        messageInput.addEventListener('input', () => { messageInput.style.height = "40px"; messageInput.style.height = (messageInput.scrollHeight) + "px"; });
 
-        // メッセージ受信
+        // --- メッセージ受信と描画 ---
         const q = query(msgRef, orderBy("createdAt", "asc"));
         onSnapshot(q, (snapshot) => {
             chatMessages.innerHTML = "";
             snapshot.forEach((docSnap) => {
                 const data = docSnap.data();
                 const msgId = docSnap.id;
-                const isMine = (data.uid === currentUser.id); // 自分のIDと一致するか
+                const isMine = (data.uid === currentUser.id);
 
-                const linkedText = data.text ? data.text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>') : "";
+                // 日付（時間）のフォーマット
+                let timeString = "送信中...";
+                if (data.createdAt) {
+                    const d = data.createdAt.toDate();
+                    const month = d.getMonth() + 1;
+                    const date = d.getDate();
+                    const hours = String(d.getHours()).padStart(2, '0');
+                    const mins = String(d.getMinutes()).padStart(2, '0');
+                    timeString = `${month}/${date} ${hours}:${mins}`;
+                }
+
+                // URLを青いボタンに変換する正規表現
+                const linkedText = data.text ? data.text.replace(/(https?:\/\/[^\s]+)/g, '<br><a href="$1" target="_blank" class="link-btn">🔗 リンクを開く</a><br>') : "";
+                
+                // 画像・動画がある場合のHTML
+                let mediaHtml = "";
+                if (data.fileUrl) {
+                    if (data.fileType === 'image') {
+                        mediaHtml = `<div class="media-container"><a href="${data.fileUrl}" target="_blank"><img src="${data.fileUrl}"></a></div>`;
+                    } else if (data.fileType === 'video') {
+                        mediaHtml = `<div class="media-container"><video src="${data.fileUrl}" controls></video></div>`;
+                    }
+                }
                 
                 const wrap = document.createElement('div');
                 wrap.className = `msg-wrap ${isMine ? 'mine' : ''}`;
                 wrap.innerHTML = `
-                    <div class="msg-info">${data.name} (@${data.uid})</div>
-                    <div class="message">${linkedText.replace(/\n/g, '<br>')}
+                    <div class="msg-info">
+                        <span>${data.name} (@${data.uid})</span>
+                        <span class="msg-time">${timeString}</span>
+                    </div>
+                    <div class="message">
+                        ${linkedText.replace(/\n/g, '<br>')}
+                        ${mediaHtml}
                         <button class="reaction" onclick="window.addReaction('${msgId}', ${data.likes || 0})">👍 <span>${data.likes || 0}</span></button>
                     </div>
                     ${isMine ? `
@@ -324,7 +393,7 @@
             chatMessages.scrollTop = chatMessages.scrollHeight;
         });
 
-        // メッセージの削除・編集・スタンプ
+        // 編集・削除・リアクション
         window.deleteMessage = async function(id) { if(confirm("削除しますか？")) await deleteDoc(doc(db, "messages", id)); };
         window.editMessage = async function(id, oldText) {
             const newText = prompt("編集", oldText);
