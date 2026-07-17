@@ -6,24 +6,26 @@
     <title>みんなのグループチャット</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { display: flex; height: 100vh; background-color: #f0f2f5; overflow: hidden; }
+        
+        body { display: flex; height: 100vh; height: 100dvh; background-color: #f0f2f5; overflow: hidden; }
 
         /* 左サイドバー */
-        .sidebar { width: 250px; background: #fff; border-right: 1px solid #ddd; display: flex; flex-direction: column; transition: transform 0.3s ease; z-index: 100; }
-        .search-box { padding: 10px; border-bottom: 1px solid #ddd; }
+        .sidebar { width: 250px; background: #fff; border-right: 1px solid #ddd; display: flex; flex-direction: column; transition: transform 0.3s ease; z-index: 100; height: 100%;}
+        .search-box { padding: 10px; border-bottom: 1px solid #ddd; flex-shrink: 0;}
         .search-box input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; outline: none; }
         .member-list { flex: 1; overflow-y: auto; padding: 10px; }
         .member { display: flex; align-items: center; justify-content: space-between; padding: 10px; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
         .status { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px;}
-        .status.online { background: #4caf50; } /* オンラインは緑 */
-        .status.offline { background: #f44336; } /* オフラインは赤 */
-        .last-login { font-size: 10px; color: #888; }
+        .status.online { background: #4caf50; } 
+        .status.offline { background: #f44336; } 
+        .last-login { font-size: 10px; color: #888; text-align: right; }
 
-        /* メインチャット */
-        .chat-area { flex: 1; display: flex; flex-direction: column; position: relative; min-width: 0; }
-        .chat-header { padding: 15px; background: #fff; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        /* メインチャット全体 */
+        .chat-area { flex: 1; display: flex; flex-direction: column; position: relative; min-width: 0; height: 100%; }
+        .chat-header { padding: 15px; background: #fff; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); flex-shrink: 0; }
         .menu-btn { display: none; font-size: 20px; background: none; border: none; cursor: pointer; margin-right: 10px; }
         .header-title { display: flex; align-items: center; font-weight: bold; }
+        .header-actions { display: flex; gap: 5px; } /* ボタンを並べる用 */
 
         /* タブデザイン */
         .tabs { display: flex; gap: 15px; margin-left: 15px; }
@@ -41,21 +43,21 @@
         .msg-actions { font-size: 11px; color: #888; margin-top: 4px; display: flex; gap: 10px; cursor: pointer; }
         .reaction { background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 2px 6px; font-size: 12px; cursor: pointer; margin-top: 5px; }
         
-        /* リンクのボタン化 */
         .link-btn { display: inline-block; margin: 5px 0; padding: 6px 12px; background-color: #007bff; color: white !important; text-decoration: none; border-radius: 6px; font-size: 12px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-        .link-btn:active { transform: translateY(1px); box-shadow: none; }
-
-        /* メディア(画像・動画) */
         .media-container { margin-top: 5px; }
         .media-container img, .media-container video { max-width: 100%; border-radius: 10px; cursor: pointer; max-height: 250px;}
 
         /* 入力エリア */
-        .input-area { background: #fff; padding: 10px; border-top: 1px solid #ddd; display: flex; gap: 8px; align-items: flex-end; }
+        .input-area { 
+            background: #fff; padding: 10px; border-top: 1px solid #ddd; display: flex; gap: 8px; align-items: flex-end; 
+            flex-shrink: 0; 
+            padding-bottom: max(10px, env(safe-area-inset-bottom)); 
+        }
         .input-area textarea { flex: 1; resize: none; padding: 10px; border: 1px solid #ccc; border-radius: 20px; height: 40px; max-height: 100px; outline: none; }
         .btn { padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 20px; cursor: pointer; font-weight: bold;}
         .btn-icon { background: none; color: #555; font-size: 26px; padding: 0 5px; border:none; cursor: pointer; font-weight: bold;}
 
-        /* 便利サイト一覧表示エリア */
+        /* 便利サイト */
         .sites-container { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
         .site-card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 8px; width: 100%; }
         .site-card-header { display: flex; justify-content: space-between; align-items: center; }
@@ -113,13 +115,11 @@
             <input type="text" id="inputName" placeholder="名前 (例: 太郎)" required>
             <input type="text" id="inputId" placeholder="ID (例: user001)" required>
             <input type="password" id="inputPassword" placeholder="パスワード" required>
-            
             <div class="help-text">
                 <b style="color:#d9534f;">※IDは一度決めたら変更できません。</b><br>
                 ※初めてのIDを使うとパスワードが自動登録されます。<br>
                 ※同じIDを使う場合は登録時のパスワードが必要です。
             </div>
-
             <button class="btn" id="joinBtn" style="margin-top: 10px;">ログイン / 登録</button>
         </div>
     </div>
@@ -140,10 +140,13 @@
                     <span class="tab-btn" id="tabSites">便利サイト</span>
                 </div>
             </div>
-            <button class="btn" style="background:#6c757d; font-size: 12px;" onclick="window.logout()">ログアウト</button>
+            <div class="header-actions">
+                <button class="btn" style="background:#28a745; font-size: 12px; padding: 8px 10px;" onclick="window.requestNotification()">通知ON</button>
+                <button class="btn" style="background:#6c757d; font-size: 12px; padding: 8px 10px;" onclick="window.logout()">ログアウト</button>
+            </div>
         </div>
         
-        <!-- ① チャット画面用の表示部 -->
+        <!-- チャット画面 -->
         <div id="chatView" style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
             <div class="messages" id="chatMessages"></div>
             <div class="input-area">
@@ -154,11 +157,9 @@
             </div>
         </div>
 
-        <!-- ② 便利サイト用の表示部 -->
+        <!-- 便利サイト画面 -->
         <div id="sitesView" style="display: none; flex-direction: column; flex: 1; min-height: 0;">
-            <div class="sites-container" id="sitesContainer">
-                <!-- ここにJSONから読み込んだカードが表示されます -->
-            </div>
+            <div class="sites-container" id="sitesContainer"></div>
         </div>
     </div>
 
@@ -184,6 +185,7 @@
         const msgRef = collection(db, "messages");
         
         let currentUser = { id: null, name: "" };
+        let isFirstLoad = true; // 通知を出さないための初回読み込みフラグ
 
         function getCookie(name) {
             let matches = document.cookie.match(new RegExp("(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"));
@@ -208,17 +210,15 @@
             checkAutoLogin();
         });
 
-        // --- 自動ログイン ---
         async function checkAutoLogin() {
             const cId = getCookie("chatId");
             const cPass = getCookie("chatPass");
-            
             if (cId && cPass) {
                 const userRef = doc(db, "users", cId);
                 const docSnap = await getDoc(userRef);
                 if (docSnap.exists() && docSnap.data().password === cPass) {
                     currentUser = { id: cId, name: docSnap.data().name };
-                    updateUserPresence();
+                    updateUserPresence(true);
                 } else {
                     settingsModal.classList.remove('hidden');
                 }
@@ -227,12 +227,10 @@
             }
         }
 
-        // --- ログイン処理 ---
         document.getElementById('joinBtn').addEventListener('click', async () => {
             const name = document.getElementById('inputName').value.trim();
             const id = document.getElementById('inputId').value.trim();
             const password = document.getElementById('inputPassword').value.trim();
-
             if(!name || !id || !password) return alert("全て入力してください");
 
             const userRef = doc(db, "users", id); 
@@ -258,7 +256,7 @@
             currentUser = { id: id, name: name };
             setCookie("chatId", id); setCookie("chatPass", password);
             settingsModal.classList.add('hidden');
-            updateUserPresence();
+            updateUserPresence(true);
         }
 
         window.logout = function() {
@@ -267,16 +265,36 @@
             location.reload();
         };
 
+        // --- 通知機能 ---
+        window.requestNotification = function() {
+            if (!("Notification" in window)) {
+                alert("このブラウザは通知に対応していません");
+                return;
+            }
+            Notification.requestPermission().then(permission => {
+                if (permission === "granted") {
+                    alert("通知がONになりました！新しいメッセージが来るとお知らせします。");
+                }
+            });
+        };
+
         // --- オンライン状態管理 ---
-        async function updateUserPresence() {
+        async function updateUserPresence(isOnline = true) {
             if(!currentUser.id) return;
-            await setDoc(doc(db, "users", currentUser.id), { lastSeen: serverTimestamp(), isOnline: true }, { merge: true });
+            try {
+                await setDoc(doc(db, "users", currentUser.id), { 
+                    lastSeen: serverTimestamp(), 
+                    isOnline: isOnline 
+                }, { merge: true });
+            } catch(e) { console.error(e); }
         }
+
+        // タブを閉じた時だけオフラインにする（別のタブを見ている時はオンラインのまま）
         window.addEventListener("beforeunload", () => {
-            if(currentUser.id) setDoc(doc(db, "users", currentUser.id), { isOnline: false, lastSeen: serverTimestamp() }, { merge: true });
+            updateUserPresence(false);
         });
 
-        // --- メンバー一覧描画 ---
+        // --- メンバー一覧描画（最終ログイン時刻追加） ---
         const memberList = document.getElementById('memberList');
         const searchInput = document.getElementById('searchInput');
         let allUsers = [];
@@ -287,6 +305,13 @@
             renderMembers();
         });
 
+        // タイムスタンプを 「MM/DD HH:mm」 に変換する関数
+        function formatTime(timestamp) {
+            if (!timestamp) return "不明";
+            const d = timestamp.toDate();
+            return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        }
+
         function renderMembers() {
             const filterText = searchInput.value.toLowerCase();
             memberList.innerHTML = "";
@@ -294,7 +319,8 @@
 
             filtered.forEach(u => {
                 const statusClass = u.isOnline ? "online" : "offline";
-                const timeText = u.isOnline ? "オンライン" : "オフライン";
+                // オンラインなら「オンライン」、オフラインなら「最終ログイン: ○/○ ○:○」
+                const timeText = u.isOnline ? "オンライン" : `最終ログイン:<br>${formatTime(u.lastSeen)}`;
                 memberList.innerHTML += `
                     <div class="member">
                         <div><span class="status ${statusClass}"></span> ${u.name} <span style="color:#888; font-size:12px;">(@${u.id})</span></div>
@@ -304,7 +330,7 @@
         }
         searchInput.addEventListener('input', renderMembers);
 
-        // --- 画像送信（＋ボタン） ---
+        // --- 画像送信 ---
         const fileInput = document.getElementById('fileInput');
         document.getElementById('attachBtn').addEventListener('click', () => {
             if(!currentUser.id) return alert("ログインしてください");
@@ -317,7 +343,7 @@
             
             const messageInput = document.getElementById('messageInput');
             messageInput.value = "アップロード中...";
-            messageInput.disabled = true; // 送信中に入力欄をロック
+            messageInput.disabled = true;
 
             try {
                 const fRef = storageRef(storage, `uploads/${Date.now()}_${file.name}`);
@@ -329,31 +355,27 @@
                     fileType: file.type.startsWith('image/') ? 'image' : 'video',
                     createdAt: serverTimestamp(), likes: 0
                 });
-                updateUserPresence();
+                updateUserPresence(true);
             } catch(err) {
                 console.error(err); alert("送信失敗。");
             } finally {
-                messageInput.value = ""; 
-                messageInput.disabled = false; // ロック解除
-                e.target.value = "";
+                messageInput.value = ""; messageInput.disabled = false; e.target.value = "";
             }
         });
 
-        // --- テキスト送信（バグ修正済み） ---
+        // --- テキスト送信 ---
         const chatMessages = document.getElementById('chatMessages');
         const messageInput = document.getElementById('messageInput');
 
         async function sendMessage() {
-            // ★バグ対策: ファイルアップロード中で入力欄がロックされているときは送信処理を行わない
-            if (messageInput.disabled) return; 
-
+            if (messageInput.disabled) return;
             const text = messageInput.value.trim();
             if (!text || !currentUser.id) return;
             messageInput.value = ""; messageInput.style.height = "40px";
 
             try {
                 await addDoc(msgRef, { uid: currentUser.id, name: currentUser.name, text: text, createdAt: serverTimestamp(), likes: 0 });
-                updateUserPresence();
+                updateUserPresence(true);
             } catch (e) { console.error(e); }
         }
 
@@ -361,10 +383,12 @@
         messageInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
         messageInput.addEventListener('input', () => { messageInput.style.height = "40px"; messageInput.style.height = (messageInput.scrollHeight) + "px"; });
 
-        // --- メッセージ受信と描画 ---
+        // --- メッセージ受信・描画・通知 ---
         const q = query(msgRef, orderBy("createdAt", "asc"));
         onSnapshot(q, (snapshot) => {
             chatMessages.innerHTML = "";
+            
+            // 画面描画
             snapshot.forEach((docSnap) => {
                 const data = docSnap.data();
                 const msgId = docSnap.id;
@@ -372,15 +396,9 @@
 
                 let timeString = "送信中...";
                 if (data.createdAt) {
-                    const d = data.createdAt.toDate();
-                    const month = d.getMonth() + 1;
-                    const date = d.getDate();
-                    const hours = String(d.getHours()).padStart(2, '0');
-                    const mins = String(d.getMinutes()).padStart(2, '0');
-                    timeString = `${month}/${date} ${hours}:${mins}`;
+                    timeString = formatTime(data.createdAt);
                 }
 
-                // URLを青いボタンに変換する
                 const linkedText = data.text ? data.text.replace(/(https?:\/\/[^\s]+)/g, '<br><a href="$1" target="_blank" class="link-btn">🔗 リンクを開く</a><br>') : "";
                 
                 let mediaHtml = "";
@@ -413,6 +431,21 @@
                 chatMessages.appendChild(wrap);
             });
             chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            // 新着メッセージの通知ロジック
+            if (!isFirstLoad) {
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === "added") {
+                        const data = change.doc.data();
+                        // 自分のメッセージ以外 ＆ 通知が許可されている場合
+                        if (data.uid !== currentUser.id && Notification.permission === "granted") {
+                            let bodyText = data.text ? data.text : "画像/動画が送信されました";
+                            new Notification(`${data.name}さんからのメッセージ`, { body: bodyText });
+                        }
+                    }
+                });
+            }
+            isFirstLoad = false;
         });
 
         window.deleteMessage = async function(id) { if(confirm("削除しますか？")) await deleteDoc(doc(db, "messages", id)); };
@@ -422,7 +455,7 @@
         };
         window.addReaction = async function(id, currentLikes) { await updateDoc(doc(db, "messages", id), { likes: currentLikes + 1 }); };
 
-        // --- タブ切り替えシステム ---
+        // --- タブ切り替え ---
         const tabChat = document.getElementById('tabChat');
         const tabSites = document.getElementById('tabSites');
         const chatView = document.getElementById('chatView');
@@ -430,30 +463,24 @@
         const sitesContainer = document.getElementById('sitesContainer');
 
         tabChat.addEventListener('click', () => {
-            tabChat.classList.add('active');
-            tabSites.classList.remove('active');
-            chatView.style.display = 'flex';
-            sitesView.style.display = 'none';
+            tabChat.classList.add('active'); tabSites.classList.remove('active');
+            chatView.style.display = 'flex'; sitesView.style.display = 'none';
         });
 
         tabSites.addEventListener('click', () => {
-            tabSites.classList.add('active');
-            tabChat.classList.remove('active');
-            chatView.style.display = 'none';
-            sitesView.style.display = 'flex';
-            loadConvenientSites(); // 便利サイトのデータを読み込む
+            tabSites.classList.add('active'); tabChat.classList.remove('active');
+            chatView.style.display = 'none'; sitesView.style.display = 'flex';
+            loadConvenientSites();
         });
 
-        // JSONファイルの読み込み処理
         async function loadConvenientSites() {
             sitesContainer.innerHTML = "<p style='padding:20px; color:#888;'>読み込み中...</p>";
             try {
-                // 'web_tools.json' からデータを取得
-                const res = await fetch('web_tools.json');
+                const res = await fetch('便利サイト.json');
                 if(!res.ok) throw new Error();
                 const data = await res.json();
                 
-                sitesContainer.innerHTML = ""; // 読み込み文字を消去
+                sitesContainer.innerHTML = ""; 
                 data.forEach(site => {
                     sitesContainer.innerHTML += `
                         <div class="site-card">
@@ -466,14 +493,10 @@
                     `;
                 });
             } catch (e) {
-                sitesContainer.innerHTML = `<p style='padding:20px; color:#f44336;'>
-                    'web_tools.json' の読み込みに失敗しました。<br>
-                    同じフォルダにファイルが正しく置かれているか確認してください。
-                </p>`;
+                sitesContainer.innerHTML = `<p style='padding:20px; color:#f44336;'>'便利サイト.json' を読み込めませんでした。</p>`;
             }
         }
 
-        // --- モバイルメニュー ---
         const sidebar = document.getElementById('sidebar');
         const menuBtn = document.getElementById('menuBtn');
         const chatArea = document.getElementById('chatArea');
