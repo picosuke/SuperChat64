@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>みんなのグループチャット</title>
+    
+    <!-- ビデオ通話用の外部スクリプトを読み込み -->
+    <script src="https://meet.jit.si/external_api.js"></script>
+
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         
@@ -25,11 +29,11 @@
         .chat-header { padding: 15px; background: #fff; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); flex-shrink: 0; }
         .menu-btn { display: none; font-size: 20px; background: none; border: none; cursor: pointer; margin-right: 10px; }
         .header-title { display: flex; align-items: center; font-weight: bold; }
-        .header-actions { display: flex; gap: 5px; } /* ボタンを並べる用 */
+        .header-actions { display: flex; gap: 5px; } 
 
         /* タブデザイン */
         .tabs { display: flex; gap: 15px; margin-left: 15px; }
-        .tab-btn { font-size: 16px; cursor: pointer; color: #888; padding: 5px 10px; border-bottom: 2px solid transparent; font-weight: bold; user-select: none; }
+        .tab-btn { font-size: 15px; cursor: pointer; color: #888; padding: 5px 10px; border-bottom: 2px solid transparent; font-weight: bold; user-select: none; }
         .tab-btn.active { color: #007bff; border-bottom: 2px solid #007bff; }
 
         /* メッセージ表示部 */
@@ -64,6 +68,9 @@
         .site-name { font-weight: bold; font-size: 16px; color: #333; }
         .site-desc { font-size: 13px; color: #666; line-height: 1.4; }
 
+        /* 通話エリア */
+        #callView { width: 100%; height: 100%; background: #000; }
+
         /* モーダル */
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background: #fff; padding: 25px; border-radius: 12px; width: 90%; max-width: 350px; display: flex; flex-direction: column; gap: 12px; }
@@ -81,6 +88,8 @@
             .sidebar { position: absolute; height: 100%; transform: translateX(-100%); }
             .sidebar.open { transform: translateX(0); box-shadow: 2px 0 5px rgba(0,0,0,0.2); }
             .menu-btn { display: block; }
+            .tabs { gap: 10px; margin-left: 5px; }
+            .tab-btn { font-size: 13px; padding: 5px; }
         }
     </style>
 </head>
@@ -95,14 +104,13 @@
             <b>🔐 安全なログインシステム</b>
             <ul>
                 <li><b style="color:#d9534f;">IDは一度決めたら変更できません。</b></li>
-                <li>初めて入力するIDなら、自動でパスワードが登録されます。</li>
-                <li>2回目からは、同じIDとパスワードを入れることで本人として入れます。</li>
+                <li>初めて入力するIDなら自動で登録されます。</li>
             </ul>
             <b>💬 便利な機能</b>
             <ul>
-                <li><b>[＋]ボタン</b> を押すと画像や動画を送れます。</li>
-                <li><b>URL</b> をそのまま送ると、押しやすいボタンに変わります！</li>
-                <li>オフラインの人はリストで<span style="color:#f44336; font-weight:bold;">赤色</span>で表示されます。</li>
+                <li><b>[＋]ボタン</b> で画像や動画を送れます。</li>
+                <li><b>URL</b> をそのまま送るとボタンに変わります！</li>
+                <li><b>通話・画面共有タブ</b> から、顔出しや画面を見せながら話せます！</li>
             </ul>
             <button class="btn" id="closeIntroBtn" style="width:100%; margin-top: 10px;">理解してはじめる</button>
         </div>
@@ -138,6 +146,7 @@
                 <div class="tabs">
                     <span class="tab-btn active" id="tabChat">Chat</span>
                     <span class="tab-btn" id="tabSites">便利サイト</span>
+                    <span class="tab-btn" id="tabCall">通話・画面共有</span>
                 </div>
             </div>
             <div class="header-actions">
@@ -146,7 +155,7 @@
             </div>
         </div>
         
-        <!-- チャット画面 -->
+        <!-- ① チャット画面 -->
         <div id="chatView" style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
             <div class="messages" id="chatMessages"></div>
             <div class="input-area">
@@ -157,9 +166,14 @@
             </div>
         </div>
 
-        <!-- 便利サイト画面 -->
+        <!-- ② 便利サイト画面 -->
         <div id="sitesView" style="display: none; flex-direction: column; flex: 1; min-height: 0;">
             <div class="sites-container" id="sitesContainer"></div>
+        </div>
+
+        <!-- ③ 通話・画面共有画面 -->
+        <div id="callView" style="display: none; flex-direction: column; flex: 1; min-height: 0;">
+            <!-- ここにビデオ通話(Jitsi)が埋め込まれます -->
         </div>
     </div>
 
@@ -185,7 +199,7 @@
         const msgRef = collection(db, "messages");
         
         let currentUser = { id: null, name: "" };
-        let isFirstLoad = true; // 通知を出さないための初回読み込みフラグ
+        let isFirstLoad = true;
 
         function getCookie(name) {
             let matches = document.cookie.match(new RegExp("(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"));
@@ -265,36 +279,28 @@
             location.reload();
         };
 
-        // --- 通知機能 ---
         window.requestNotification = function() {
             if (!("Notification" in window)) {
-                alert("このブラウザは通知に対応していません");
-                return;
+                alert("このブラウザは通知に対応していません"); return;
             }
             Notification.requestPermission().then(permission => {
-                if (permission === "granted") {
-                    alert("通知がONになりました！新しいメッセージが来るとお知らせします。");
-                }
+                if (permission === "granted") alert("通知がONになりました！");
             });
         };
 
-        // --- オンライン状態管理 ---
         async function updateUserPresence(isOnline = true) {
             if(!currentUser.id) return;
             try {
-                await setDoc(doc(db, "users", currentUser.id), { 
-                    lastSeen: serverTimestamp(), 
-                    isOnline: isOnline 
-                }, { merge: true });
+                await setDoc(doc(db, "users", currentUser.id), { lastSeen: serverTimestamp(), isOnline: isOnline }, { merge: true });
             } catch(e) { console.error(e); }
         }
 
-        // タブを閉じた時だけオフラインにする（別のタブを見ている時はオンラインのまま）
-        window.addEventListener("beforeunload", () => {
-            updateUserPresence(false);
+        window.addEventListener("beforeunload", () => { updateUserPresence(false); });
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === 'hidden') updateUserPresence(false);
+            else updateUserPresence(true);
         });
 
-        // --- メンバー一覧描画（最終ログイン時刻追加） ---
         const memberList = document.getElementById('memberList');
         const searchInput = document.getElementById('searchInput');
         let allUsers = [];
@@ -305,7 +311,6 @@
             renderMembers();
         });
 
-        // タイムスタンプを 「MM/DD HH:mm」 に変換する関数
         function formatTime(timestamp) {
             if (!timestamp) return "不明";
             const d = timestamp.toDate();
@@ -319,7 +324,6 @@
 
             filtered.forEach(u => {
                 const statusClass = u.isOnline ? "online" : "offline";
-                // オンラインなら「オンライン」、オフラインなら「最終ログイン: ○/○ ○:○」
                 const timeText = u.isOnline ? "オンライン" : `最終ログイン:<br>${formatTime(u.lastSeen)}`;
                 memberList.innerHTML += `
                     <div class="member">
@@ -330,7 +334,6 @@
         }
         searchInput.addEventListener('input', renderMembers);
 
-        // --- 画像送信 ---
         const fileInput = document.getElementById('fileInput');
         document.getElementById('attachBtn').addEventListener('click', () => {
             if(!currentUser.id) return alert("ログインしてください");
@@ -340,10 +343,8 @@
         fileInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file || !currentUser.id) return;
-            
             const messageInput = document.getElementById('messageInput');
-            messageInput.value = "アップロード中...";
-            messageInput.disabled = true;
+            messageInput.value = "アップロード中..."; messageInput.disabled = true;
 
             try {
                 const fRef = storageRef(storage, `uploads/${Date.now()}_${file.name}`);
@@ -363,7 +364,6 @@
             }
         });
 
-        // --- テキスト送信 ---
         const chatMessages = document.getElementById('chatMessages');
         const messageInput = document.getElementById('messageInput');
 
@@ -383,61 +383,42 @@
         messageInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
         messageInput.addEventListener('input', () => { messageInput.style.height = "40px"; messageInput.style.height = (messageInput.scrollHeight) + "px"; });
 
-        // --- メッセージ受信・描画・通知 ---
         const q = query(msgRef, orderBy("createdAt", "asc"));
         onSnapshot(q, (snapshot) => {
             chatMessages.innerHTML = "";
-            
-            // 画面描画
             snapshot.forEach((docSnap) => {
                 const data = docSnap.data();
                 const msgId = docSnap.id;
                 const isMine = (data.uid === currentUser.id);
 
                 let timeString = "送信中...";
-                if (data.createdAt) {
-                    timeString = formatTime(data.createdAt);
-                }
+                if (data.createdAt) timeString = formatTime(data.createdAt);
 
                 const linkedText = data.text ? data.text.replace(/(https?:\/\/[^\s]+)/g, '<br><a href="$1" target="_blank" class="link-btn">🔗 リンクを開く</a><br>') : "";
-                
                 let mediaHtml = "";
                 if (data.fileUrl) {
-                    if (data.fileType === 'image') {
-                        mediaHtml = `<div class="media-container"><a href="${data.fileUrl}" target="_blank"><img src="${data.fileUrl}"></a></div>`;
-                    } else if (data.fileType === 'video') {
-                        mediaHtml = `<div class="media-container"><video src="${data.fileUrl}" controls></video></div>`;
-                    }
+                    if (data.fileType === 'image') mediaHtml = `<div class="media-container"><a href="${data.fileUrl}" target="_blank"><img src="${data.fileUrl}"></a></div>`;
+                    else if (data.fileType === 'video') mediaHtml = `<div class="media-container"><video src="${data.fileUrl}" controls></video></div>`;
                 }
                 
                 const wrap = document.createElement('div');
                 wrap.className = `msg-wrap ${isMine ? 'mine' : ''}`;
                 wrap.innerHTML = `
-                    <div class="msg-info">
-                        <span>${data.name} (@${data.uid})</span>
-                        <span class="msg-time">${timeString}</span>
-                    </div>
+                    <div class="msg-info"><span>${data.name} (@${data.uid})</span><span class="msg-time">${timeString}</span></div>
                     <div class="message">
-                        ${linkedText.replace(/\n/g, '<br>')}
-                        ${mediaHtml}
+                        ${linkedText.replace(/\n/g, '<br>')}${mediaHtml}
                         <button class="reaction" onclick="window.addReaction('${msgId}', ${data.likes || 0})">👍 <span>${data.likes || 0}</span></button>
                     </div>
-                    ${isMine ? `
-                    <div class="msg-actions">
-                        <span onclick="window.editMessage('${msgId}', '${data.text.replace(/\n/g, '\\n')}')">編集</span>
-                        <span onclick="window.deleteMessage('${msgId}')">削除</span>
-                    </div>` : ''}
+                    ${isMine ? `<div class="msg-actions"><span onclick="window.editMessage('${msgId}', '${data.text.replace(/\n/g, '\\n')}')">編集</span><span onclick="window.deleteMessage('${msgId}')">削除</span></div>` : ''}
                 `;
                 chatMessages.appendChild(wrap);
             });
             chatMessages.scrollTop = chatMessages.scrollHeight;
 
-            // 新着メッセージの通知ロジック
             if (!isFirstLoad) {
                 snapshot.docChanges().forEach((change) => {
                     if (change.type === "added") {
                         const data = change.doc.data();
-                        // 自分のメッセージ以外 ＆ 通知が許可されている場合
                         if (data.uid !== currentUser.id && Notification.permission === "granted") {
                             let bodyText = data.text ? data.text : "画像/動画が送信されました";
                             new Notification(`${data.name}さんからのメッセージ`, { body: bodyText });
@@ -455,31 +436,65 @@
         };
         window.addReaction = async function(id, currentLikes) { await updateDoc(doc(db, "messages", id), { likes: currentLikes + 1 }); };
 
-        // --- タブ切り替え ---
+        // --- タブ切り替え & 通話ロジック ---
         const tabChat = document.getElementById('tabChat');
         const tabSites = document.getElementById('tabSites');
+        const tabCall = document.getElementById('tabCall');
         const chatView = document.getElementById('chatView');
         const sitesView = document.getElementById('sitesView');
-        const sitesContainer = document.getElementById('sitesContainer');
+        const callView = document.getElementById('callView');
+        let jitsiApi = null; // 通話用の変数
+
+        function hideAllViews() {
+            chatView.style.display = 'none';
+            sitesView.style.display = 'none';
+            callView.style.display = 'none';
+            tabChat.classList.remove('active');
+            tabSites.classList.remove('active');
+            tabCall.classList.remove('active');
+        }
 
         tabChat.addEventListener('click', () => {
-            tabChat.classList.add('active'); tabSites.classList.remove('active');
-            chatView.style.display = 'flex'; sitesView.style.display = 'none';
+            hideAllViews();
+            tabChat.classList.add('active');
+            chatView.style.display = 'flex';
         });
 
         tabSites.addEventListener('click', () => {
-            tabSites.classList.add('active'); tabChat.classList.remove('active');
-            chatView.style.display = 'none'; sitesView.style.display = 'flex';
+            hideAllViews();
+            tabSites.classList.add('active');
+            sitesView.style.display = 'flex';
             loadConvenientSites();
         });
 
+        tabCall.addEventListener('click', () => {
+            hideAllViews();
+            tabCall.classList.add('active');
+            callView.style.display = 'flex';
+            
+            // Jitsi Meet を起動（まだ起動していなければ）
+            if (!jitsiApi) {
+                const domain = 'meet.jit.si';
+                const options = {
+                    roomName: 'superchat64-group-room-xyz', // このチャット専用のルーム名
+                    width: '100%',
+                    height: '100%',
+                    parentNode: callView,
+                    userInfo: {
+                        displayName: currentUser.name || "ゲスト"
+                    }
+                };
+                jitsiApi = new JitsiMeetExternalAPI(domain, options);
+            }
+        });
+
         async function loadConvenientSites() {
+            const sitesContainer = document.getElementById('sitesContainer');
             sitesContainer.innerHTML = "<p style='padding:20px; color:#888;'>読み込み中...</p>";
             try {
                 const res = await fetch('便利サイト.json');
                 if(!res.ok) throw new Error();
                 const data = await res.json();
-                
                 sitesContainer.innerHTML = ""; 
                 data.forEach(site => {
                     sitesContainer.innerHTML += `
@@ -489,8 +504,7 @@
                                 <a href="${site.url}" target="_blank" class="link-btn" style="margin:0;">🔗 サイトを開く</a>
                             </div>
                             <div class="site-desc">${site.description}</div>
-                        </div>
-                    `;
+                        </div>`;
                 });
             } catch (e) {
                 sitesContainer.innerHTML = `<p style='padding:20px; color:#f44336;'>'便利サイト.json' を読み込めませんでした。</p>`;
