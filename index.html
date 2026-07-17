@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>みんなのグループチャット</title>
     
-    <!-- ビデオ通話用の外部スクリプトを読み込み -->
+    <!-- ビデオ通話用の外部スクリプト -->
     <script src="https://meet.jit.si/external_api.js"></script>
 
     <style>
@@ -68,9 +68,6 @@
         .site-name { font-weight: bold; font-size: 16px; color: #333; }
         .site-desc { font-size: 13px; color: #666; line-height: 1.4; }
 
-        /* 通話エリア */
-        #callView { width: 100%; height: 100%; background: #000; }
-
         /* モーダル */
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background: #fff; padding: 25px; border-radius: 12px; width: 90%; max-width: 350px; display: flex; flex-direction: column; gap: 12px; }
@@ -109,7 +106,7 @@
             <b>💬 便利な機能</b>
             <ul>
                 <li><b>[＋]ボタン</b> で画像や動画を送れます。</li>
-                <li><b>URL</b> をそのまま送るとボタンに変わります！</li>
+                <li><b style="color:#28a745;">2日前の古いメッセージは自動で削除されます。</b></li>
                 <li><b>通話・画面共有タブ</b> から、顔出しや画面を見せながら話せます！</li>
             </ul>
             <button class="btn" id="closeIntroBtn" style="width:100%; margin-top: 10px;">理解してはじめる</button>
@@ -171,16 +168,22 @@
             <div class="sites-container" id="sitesContainer"></div>
         </div>
 
-        <!-- ③ 通話・画面共有画面 -->
-        <div id="callView" style="display: none; flex-direction: column; flex: 1; min-height: 0;">
-            <!-- ここにビデオ通話(Jitsi)が埋め込まれます -->
+        <!-- ③ 通話・画面共有画面（ボタンを押すまで読み込まないように軽量化） -->
+        <div id="callView" style="display: none; flex-direction: column; flex: 1; min-height: 0; justify-content: center; align-items: center;">
+            <div id="callStartContainer" style="text-align: center;">
+                <p style="margin-bottom: 15px; font-weight: bold; color: #333;">通話・画面共有システムを開始しますか？</p>
+                <button class="btn" id="startCallBtn" style="padding: 10px 20px;">通話を開始する</button>
+                <p style="font-size: 12px; color: #888; margin-top: 15px;">※最初の1人はJitsiの画面内で「log-in」して管理者になる必要があります</p>
+            </div>
+            <div id="jitsiContainer" style="width: 100%; height: 100%; display: none;"></div>
         </div>
     </div>
 
     <!-- Firebase & JS -->
     <script type="module">
+        // ★ where と getDocs を追加で読み込みます（データ削除用）
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, deleteDoc, updateDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, where, getDocs, serverTimestamp, doc, deleteDoc, updateDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
         import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 
         const firebaseConfig = {
@@ -224,6 +227,30 @@
             checkAutoLogin();
         });
 
+        // ----------------------------------------------------
+        // ★ 古いメッセージの自動削除システム (裏側で実行)
+        // ----------------------------------------------------
+        async function deleteOldMessages() {
+            try {
+                // 現在時刻から 2日 (48時間) 前の時間を計算
+                const twoDaysAgo = new Date();
+                twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
+                // 2日より古いデータを検索
+                const oldQ = query(msgRef, where("createdAt", "<", twoDaysAgo));
+                const snapshot = await getDocs(oldQ);
+                
+                // 見つかった古いデータを一つずつ削除
+                snapshot.forEach((docSnap) => {
+                    deleteDoc(doc(db, "messages", docSnap.id));
+                });
+                console.log("古いメッセージの掃除が完了しました！");
+            } catch(e) {
+                console.error("削除エラー", e);
+            }
+        }
+
+        // --- ログイン処理 ---
         async function checkAutoLogin() {
             const cId = getCookie("chatId");
             const cPass = getCookie("chatPass");
@@ -233,6 +260,7 @@
                 if (docSnap.exists() && docSnap.data().password === cPass) {
                     currentUser = { id: cId, name: docSnap.data().name };
                     updateUserPresence(true);
+                    deleteOldMessages(); // ★ ログイン時に古いデータを掃除
                 } else {
                     settingsModal.classList.remove('hidden');
                 }
@@ -271,6 +299,7 @@
             setCookie("chatId", id); setCookie("chatPass", password);
             settingsModal.classList.add('hidden');
             updateUserPresence(true);
+            deleteOldMessages(); // ★ ログイン時に古いデータを掃除
         }
 
         window.logout = function() {
@@ -301,6 +330,7 @@
             else updateUserPresence(true);
         });
 
+        // --- メンバー一覧描画 ---
         const memberList = document.getElementById('memberList');
         const searchInput = document.getElementById('searchInput');
         let allUsers = [];
@@ -334,6 +364,7 @@
         }
         searchInput.addEventListener('input', renderMembers);
 
+        // --- 画像送信 ---
         const fileInput = document.getElementById('fileInput');
         document.getElementById('attachBtn').addEventListener('click', () => {
             if(!currentUser.id) return alert("ログインしてください");
@@ -364,6 +395,7 @@
             }
         });
 
+        // --- テキスト送信 ---
         const chatMessages = document.getElementById('chatMessages');
         const messageInput = document.getElementById('messageInput');
 
@@ -383,7 +415,13 @@
         messageInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
         messageInput.addEventListener('input', () => { messageInput.style.height = "40px"; messageInput.style.height = (messageInput.scrollHeight) + "px"; });
 
-        const q = query(msgRef, orderBy("createdAt", "asc"));
+        // --- メッセージ受信・描画 (★過去2日分だけ表示する) ---
+        const displayLimitTime = new Date();
+        displayLimitTime.setDate(displayLimitTime.getDate() - 2);
+
+        // クエリに where を追加して2日以内のものだけ取得する
+        const q = query(msgRef, where("createdAt", ">=", displayLimitTime), orderBy("createdAt", "asc"));
+        
         onSnapshot(q, (snapshot) => {
             chatMessages.innerHTML = "";
             snapshot.forEach((docSnap) => {
@@ -436,14 +474,19 @@
         };
         window.addReaction = async function(id, currentLikes) { await updateDoc(doc(db, "messages", id), { likes: currentLikes + 1 }); };
 
-        // --- タブ切り替え & 通話ロジック ---
+        // --- タブ切り替え & 通話ロジック (★軽量化対応) ---
         const tabChat = document.getElementById('tabChat');
         const tabSites = document.getElementById('tabSites');
         const tabCall = document.getElementById('tabCall');
         const chatView = document.getElementById('chatView');
         const sitesView = document.getElementById('sitesView');
         const callView = document.getElementById('callView');
-        let jitsiApi = null; // 通話用の変数
+        
+        // 軽量化のための要素
+        const callStartContainer = document.getElementById('callStartContainer');
+        const jitsiContainer = document.getElementById('jitsiContainer');
+        const startCallBtn = document.getElementById('startCallBtn');
+        let jitsiApi = null; 
 
         function hideAllViews() {
             chatView.style.display = 'none';
@@ -471,15 +514,20 @@
             hideAllViews();
             tabCall.classList.add('active');
             callView.style.display = 'flex';
-            
-            // Jitsi Meet を起動（まだ起動していなければ）
+        });
+
+        // ★ [通話を開始する] ボタンを押した時だけJitsiを読み込む
+        startCallBtn.addEventListener('click', () => {
+            callStartContainer.style.display = 'none';
+            jitsiContainer.style.display = 'block';
+
             if (!jitsiApi) {
                 const domain = 'meet.jit.si';
                 const options = {
-                    roomName: 'chatRoom_k9Zp2Qxa8F3', // このチャット専用のルーム名
+                    roomName: 'superchat64-secure-room-v1', // 推測されにくい名前に変更
                     width: '100%',
                     height: '100%',
-                    parentNode: callView,
+                    parentNode: jitsiContainer,
                     userInfo: {
                         displayName: currentUser.name || "ゲスト"
                     }
@@ -492,7 +540,7 @@
             const sitesContainer = document.getElementById('sitesContainer');
             sitesContainer.innerHTML = "<p style='padding:20px; color:#888;'>読み込み中...</p>";
             try {
-                const res = await fetch('web_tools.json');
+                const res = await fetch('便利サイト.json');
                 if(!res.ok) throw new Error();
                 const data = await res.json();
                 sitesContainer.innerHTML = ""; 
@@ -507,7 +555,7 @@
                         </div>`;
                 });
             } catch (e) {
-                sitesContainer.innerHTML = `<p style='padding:20px; color:#f44336;'>'web_tools.json' を読み込めませんでした。</p>`;
+                sitesContainer.innerHTML = `<p style='padding:20px; color:#f44336;'>'便利サイト.json' を読み込めませんでした。</p>`;
             }
         }
 
