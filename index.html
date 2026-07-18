@@ -540,7 +540,7 @@
             const sitesContainer = document.getElementById('sitesContainer');
             sitesContainer.innerHTML = "<p style='padding:20px; color:#888;'>読み込み中...</p>";
             try {
-                const res = await fetch('便利サイト.json');
+                const res = await fetch('web_tools.json');
                 if(!res.ok) throw new Error();
                 const data = await res.json();
                 sitesContainer.innerHTML = ""; 
@@ -555,7 +555,7 @@
                         </div>`;
                 });
             } catch (e) {
-                sitesContainer.innerHTML = `<p style='padding:20px; color:#f44336;'>'便利サイト.json' を読み込めませんでした。</p>`;
+                sitesContainer.innerHTML = `<p style='padding:20px; color:#f44336;'>'web_tools.json' を読み込めませんでした。</p>`;
             }
         }
 
