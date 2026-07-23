@@ -5,15 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>みんなのグループチャット</title>
     
-    <!-- ビデオ通話用の外部スクリプト -->
     <script src="https://meet.jit.si/external_api.js"></script>
 
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        
         body { display: flex; height: 100vh; height: 100dvh; background-color: #f0f2f5; overflow: hidden; }
 
-        /* 左サイドバー */
+        /* 非表示用クラス（!importantをつけて確実に消すように修正） */
+        .hidden { display: none !important; }
+
         .sidebar { width: 250px; background: #fff; border-right: 1px solid #ddd; display: flex; flex-direction: column; transition: transform 0.3s ease; z-index: 100; height: 100%;}
         .search-box { padding: 10px; border-bottom: 1px solid #ddd; flex-shrink: 0;}
         .search-box input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; outline: none; }
@@ -24,19 +24,16 @@
         .status.offline { background: #f44336; } 
         .last-login { font-size: 10px; color: #888; text-align: right; }
 
-        /* メインチャット全体 */
         .chat-area { flex: 1; display: flex; flex-direction: column; position: relative; min-width: 0; height: 100%; }
         .chat-header { padding: 15px; background: #fff; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); flex-shrink: 0; }
         .menu-btn { display: none; font-size: 20px; background: none; border: none; cursor: pointer; margin-right: 10px; }
         .header-title { display: flex; align-items: center; font-weight: bold; }
         .header-actions { display: flex; gap: 5px; } 
 
-        /* タブデザイン */
         .tabs { display: flex; gap: 15px; margin-left: 15px; }
         .tab-btn { font-size: 15px; cursor: pointer; color: #888; padding: 5px 10px; border-bottom: 2px solid transparent; font-weight: bold; user-select: none; }
         .tab-btn.active { color: #007bff; border-bottom: 2px solid #007bff; }
 
-        /* メッセージ表示部 */
         .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
         .msg-wrap { display: flex; flex-direction: column; max-width: 85%; }
         .msg-wrap.mine { align-self: flex-end; align-items: flex-end; }
@@ -51,31 +48,22 @@
         .media-container { margin-top: 5px; }
         .media-container img, .media-container video { max-width: 100%; border-radius: 10px; cursor: pointer; max-height: 250px;}
 
-        /* 入力エリア */
-        .input-area { 
-            background: #fff; padding: 10px; border-top: 1px solid #ddd; display: flex; gap: 8px; align-items: flex-end; 
-            flex-shrink: 0; 
-            padding-bottom: max(10px, env(safe-area-inset-bottom)); 
-        }
+        .input-area { background: #fff; padding: 10px; border-top: 1px solid #ddd; display: flex; gap: 8px; align-items: flex-end; flex-shrink: 0; padding-bottom: max(10px, env(safe-area-inset-bottom)); }
         .input-area textarea { flex: 1; resize: none; padding: 10px; border: 1px solid #ccc; border-radius: 20px; height: 40px; max-height: 100px; outline: none; }
         .btn { padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 20px; cursor: pointer; font-weight: bold;}
         .btn-icon { background: none; color: #555; font-size: 26px; padding: 0 5px; border:none; cursor: pointer; font-weight: bold;}
 
-        /* 便利サイト */
         .sites-container { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
         .site-card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 8px; width: 100%; }
         .site-card-header { display: flex; justify-content: space-between; align-items: center; }
         .site-name { font-weight: bold; font-size: 16px; color: #333; }
         .site-desc { font-size: 13px; color: #666; line-height: 1.4; }
 
-        /* モーダル */
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background: #fff; padding: 25px; border-radius: 12px; width: 90%; max-width: 350px; display: flex; flex-direction: column; gap: 12px; }
-        .modal.hidden { display: none; }
         .login-content { text-align: center; }
         .login-content input { padding: 10px; border: 1px solid #ccc; border-radius: 6px; width: 100%; font-size: 16px;}
         .help-text { font-size: 11px; color: #888; text-align: left; line-height: 1.4; margin-top: -5px; }
-
         .intro-content { font-size: 14px; line-height: 1.6; color: #333; max-height: 80vh; overflow-y: auto;}
         .intro-content h3 { text-align: center; color: #007bff; margin-bottom: 10px;}
         .intro-content ul { padding-left: 20px; margin-bottom: 10px; }
@@ -100,8 +88,9 @@
             <hr style="border:0; border-top:1px solid #eee; margin: 10px 0;">
             <b>🔐 安全なログインシステム</b>
             <ul>
-                <li><b style="color:#d9534f;">IDは一度決めたら変更できません。</b></li>
-                <li>初めて入力するIDなら自動で登録されます。</li>
+                <li><b style="color:#d9534f;">出席番号は一度決めたら変更できません。</b></li>
+                <li style="color:#e67e22; font-weight:bold;">※間違えた場合は、新しい番号で入り直してください（古いものは後で管理者が消します）。</li>
+                <li>初めて入力する番号なら自動で登録されます。</li>
             </ul>
             <b>💬 便利な機能</b>
             <ul>
@@ -118,20 +107,55 @@
         <div class="modal-content login-content">
             <h3>チャットに参加</h3>
             <input type="text" id="inputName" placeholder="名前 (例: 太郎)" required>
-            <input type="text" id="inputId" placeholder="ID (例: user001)" required>
+            <input type="text" id="inputId" placeholder="出席番号 (例: 40)" required>
             <input type="password" id="inputPassword" placeholder="パスワード" required>
             <div class="help-text">
-                <b style="color:#d9534f;">※IDは一度決めたら変更できません。</b><br>
-                ※初めてのIDを使うとパスワードが自動登録されます。<br>
-                ※同じIDを使う場合は登録時のパスワードが必要です。
+                <b style="color:#d9534f;">※出席番号は一度決めたら変更できません。</b><br>
+                <span style="color:#e67e22; font-weight:bold;">※間違えてしまった場合は、新しい出席番号で入り直してOKです。（古いものは後で管理者が削除します）</span><br>
+                ※初めての番号を使うとパスワードが自動登録されます。<br>
+                ※同じ番号を使う場合は登録時のパスワードが必要です。
             </div>
             <button class="btn" id="joinBtn" style="margin-top: 10px;">ログイン / 登録</button>
         </div>
     </div>
 
+    <!-- ログイン直後のアンケートモーダル -->
+    <div id="questionnaireModal" class="modal hidden">
+        
+        <!-- Step 1: 最初の質問 -->
+        <div class="modal-content" id="qStep1">
+            <h3 style="text-align:center; color:#333;">いまできますか？</h3>
+            <div style="display:flex; gap:10px; margin-top:15px; justify-content:center;">
+                <button class="btn" id="qBtnYes" style="flex:1;">はい</button>
+                <button class="btn" id="qBtnNo" style="flex:1; background:#f44336;">いいえ</button>
+            </div>
+        </div>
+        
+        <!-- Step 2 (はい の場合) -->
+        <div class="modal-content hidden" id="qStep2Yes">
+            <h3 style="text-align:center; color:#333; font-size: 16px;">今すぐ皆さんに伝えましょう！</h3>
+            <textarea id="qInputYes" placeholder="テキストを入力..." style="width:100%; height:80px; padding:10px; margin-top:15px; border:1px solid #ccc; border-radius:6px; resize:none; outline:none;"></textarea>
+            <button class="btn" id="qSendYes" style="width:100%; margin-top:10px;">送信</button>
+        </div>
+        
+        <!-- Step 2 (いいえ の場合) -->
+        <div class="modal-content hidden" id="qStep2No">
+            <h3 style="text-align:center; color:#333; font-size: 16px;">理由を教えていただきたいです。</h3>
+            <textarea id="qInputNo" placeholder="テキストを入力..." style="width:100%; height:80px; padding:10px; margin-top:15px; border:1px solid #ccc; border-radius:6px; resize:none; outline:none;"></textarea>
+            <button class="btn" id="qSendNo" style="width:100%; margin-top:10px;">送信</button>
+        </div>
+        
+        <!-- Step 3: 完了 -->
+        <div class="modal-content hidden" id="qStep3">
+            <h3 style="text-align:center; color:#333;">ご協力ありがとうございます</h3>
+            <button class="btn" id="qBtnClose" style="width:100%; margin-top:15px; background:#6c757d;">閉じる</button>
+        </div>
+
+    </div>
+
     <!-- 左サイドバー -->
     <div class="sidebar" id="sidebar">
-        <div class="search-box"><input type="text" id="searchInput" placeholder="IDか名前で検索..."></div>
+        <div class="search-box"><input type="text" id="searchInput" placeholder="出席番号か名前で検索..."></div>
         <div class="member-list" id="memberList"></div>
     </div>
 
@@ -152,7 +176,6 @@
             </div>
         </div>
         
-        <!-- ① チャット画面 -->
         <div id="chatView" style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
             <div class="messages" id="chatMessages"></div>
             <div class="input-area">
@@ -163,12 +186,10 @@
             </div>
         </div>
 
-        <!-- ② 便利サイト画面 -->
         <div id="sitesView" style="display: none; flex-direction: column; flex: 1; min-height: 0;">
             <div class="sites-container" id="sitesContainer"></div>
         </div>
 
-        <!-- ③ 通話・画面共有画面（ボタンを押すまで読み込まないように軽量化） -->
         <div id="callView" style="display: none; flex-direction: column; flex: 1; min-height: 0; justify-content: center; align-items: center;">
             <div id="callStartContainer" style="text-align: center;">
                 <p style="margin-bottom: 15px; font-weight: bold; color: #333;">通話・画面共有システムを開始しますか？</p>
@@ -181,7 +202,6 @@
 
     <!-- Firebase & JS -->
     <script type="module">
-        // ★ where と getDocs を追加で読み込みます（データ削除用）
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, where, getDocs, serverTimestamp, doc, deleteDoc, updateDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
         import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
@@ -203,23 +223,19 @@
         
         let currentUser = { id: null, name: "" };
         let isFirstLoad = true;
+        let heartbeatTimer; 
 
         function getCookie(name) {
             let matches = document.cookie.match(new RegExp("(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"));
             return matches ? decodeURIComponent(matches[1]) : undefined;
         }
-        function setCookie(name, value) {
-            document.cookie = `${name}=${encodeURIComponent(value)}; max-age=2592000; path=/`;
-        }
+        function setCookie(name, value) { document.cookie = `${name}=${encodeURIComponent(value)}; max-age=2592000; path=/`; }
 
         const introModal = document.getElementById('introModal');
         const settingsModal = document.getElementById('settingsModal');
 
-        if (!getCookie("hasSeenIntro")) {
-            introModal.classList.remove('hidden');
-        } else {
-            checkAutoLogin();
-        }
+        if (!getCookie("hasSeenIntro")) introModal.classList.remove('hidden');
+        else checkAutoLogin();
 
         document.getElementById('closeIntroBtn').addEventListener('click', () => {
             setCookie("hasSeenIntro", "true");
@@ -227,30 +243,16 @@
             checkAutoLogin();
         });
 
-        // ----------------------------------------------------
-        // ★ 古いメッセージの自動削除システム (裏側で実行)
-        // ----------------------------------------------------
         async function deleteOldMessages() {
             try {
-                // 現在時刻から 2日 (48時間) 前の時間を計算
                 const twoDaysAgo = new Date();
                 twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-
-                // 2日より古いデータを検索
                 const oldQ = query(msgRef, where("createdAt", "<", twoDaysAgo));
                 const snapshot = await getDocs(oldQ);
-                
-                // 見つかった古いデータを一つずつ削除
-                snapshot.forEach((docSnap) => {
-                    deleteDoc(doc(db, "messages", docSnap.id));
-                });
-                console.log("古いメッセージの掃除が完了しました！");
-            } catch(e) {
-                console.error("削除エラー", e);
-            }
+                snapshot.forEach((docSnap) => deleteDoc(doc(db, "messages", docSnap.id)));
+            } catch(e) { console.error(e); }
         }
 
-        // --- ログイン処理 ---
         async function checkAutoLogin() {
             const cId = getCookie("chatId");
             const cPass = getCookie("chatPass");
@@ -258,9 +260,7 @@
                 const userRef = doc(db, "users", cId);
                 const docSnap = await getDoc(userRef);
                 if (docSnap.exists() && docSnap.data().password === cPass) {
-                    currentUser = { id: cId, name: docSnap.data().name };
-                    updateUserPresence(true);
-                    deleteOldMessages(); // ★ ログイン時に古いデータを掃除
+                    loginSuccess(cId, docSnap.data().name, cPass);
                 } else {
                     settingsModal.classList.remove('hidden');
                 }
@@ -282,55 +282,101 @@
                     if (docSnap.data().password === password) {
                         if (docSnap.data().name !== name) await updateDoc(userRef, { name: name });
                         loginSuccess(id, name, password);
-                    } else {
-                        alert("パスワードが違います。このIDは他の方が使っている可能性があります。");
-                    }
+                    } else { alert("パスワードが違います。この出席番号は他の方が使っている可能性があります。"); }
                 } else {
-                    await setDoc(userRef, { name: name, password: password, isOnline: true, lastSeen: serverTimestamp() });
+                    await setDoc(userRef, { name: name, password: password, lastSeen: serverTimestamp() });
                     loginSuccess(id, name, password);
                 }
-            } catch (e) {
-                console.error(e); alert("通信エラー");
-            }
+            } catch (e) { alert("通信エラー"); }
         });
 
         function loginSuccess(id, name, password) {
             currentUser = { id: id, name: name };
             setCookie("chatId", id); setCookie("chatPass", password);
             settingsModal.classList.add('hidden');
-            updateUserPresence(true);
-            deleteOldMessages(); // ★ ログイン時に古いデータを掃除
+            deleteOldMessages(); 
+
+            updateUserPresence(); 
+            clearInterval(heartbeatTimer);
+            heartbeatTimer = setInterval(() => {
+                if (document.visibilityState === 'visible') updateUserPresence();
+            }, 30000); 
+
+            // アンケートの表示
+            showQuestionnaire();
         }
 
         window.logout = function() {
-            if(currentUser.id) setDoc(doc(db, "users", currentUser.id), { isOnline: false, lastSeen: serverTimestamp() }, { merge: true });
+            clearInterval(heartbeatTimer);
             document.cookie = "chatId=; max-age=0; path=/"; document.cookie = "chatPass=; max-age=0; path=/";
             location.reload();
         };
 
         window.requestNotification = function() {
-            if (!("Notification" in window)) {
-                alert("このブラウザは通知に対応していません"); return;
-            }
+            if (!("Notification" in window)) { alert("通知非対応です"); return; }
             Notification.requestPermission().then(permission => {
-                if (permission === "granted") alert("通知がONになりました！");
+                if (permission === "granted") alert("通知ON!");
             });
         };
 
-        async function updateUserPresence(isOnline = true) {
+        async function updateUserPresence() {
             if(!currentUser.id) return;
-            try {
-                await setDoc(doc(db, "users", currentUser.id), { lastSeen: serverTimestamp(), isOnline: isOnline }, { merge: true });
-            } catch(e) { console.error(e); }
+            try { await setDoc(doc(db, "users", currentUser.id), { lastSeen: serverTimestamp() }, { merge: true });
+            } catch(e) {}
         }
 
-        window.addEventListener("beforeunload", () => { updateUserPresence(false); });
-        document.addEventListener("visibilitychange", () => {
-            if (document.visibilityState === 'hidden') updateUserPresence(false);
-            else updateUserPresence(true);
+        // --- アンケートロジック ---
+        function showQuestionnaire() {
+            if (sessionStorage.getItem("hasAnsweredQuestionnaire")) return; 
+            
+            // 全体をまず表示
+            document.getElementById('questionnaireModal').classList.remove('hidden');
+            
+            // Step1だけ表示し、他は隠す
+            document.getElementById('qStep1').classList.remove('hidden');
+            document.getElementById('qStep2Yes').classList.add('hidden');
+            document.getElementById('qStep2No').classList.add('hidden');
+            document.getElementById('qStep3').classList.add('hidden');
+        }
+
+        document.getElementById('qBtnYes').addEventListener('click', () => {
+            document.getElementById('qStep1').classList.add('hidden');
+            document.getElementById('qStep2Yes').classList.remove('hidden');
         });
 
-        // --- メンバー一覧描画 ---
+        document.getElementById('qBtnNo').addEventListener('click', () => {
+            document.getElementById('qStep1').classList.add('hidden');
+            document.getElementById('qStep2No').classList.remove('hidden');
+        });
+
+        async function sendQuestionnaireMessage(text) {
+            if (!text || !currentUser.id) return;
+            try {
+                await addDoc(msgRef, { uid: currentUser.id, name: currentUser.name, text: text, createdAt: serverTimestamp(), likes: 0 });
+                updateUserPresence();
+            } catch (e) { console.error(e); }
+        }
+
+        document.getElementById('qSendYes').addEventListener('click', async () => {
+            const text = document.getElementById('qInputYes').value.trim();
+            if(text) await sendQuestionnaireMessage(text);
+            document.getElementById('qStep2Yes').classList.add('hidden');
+            document.getElementById('qStep3').classList.remove('hidden');
+        });
+
+        document.getElementById('qSendNo').addEventListener('click', async () => {
+            const text = document.getElementById('qInputNo').value.trim();
+            if(text) await sendQuestionnaireMessage(text);
+            document.getElementById('qStep2No').classList.add('hidden');
+            document.getElementById('qStep3').classList.remove('hidden');
+        });
+
+        document.getElementById('qBtnClose').addEventListener('click', () => {
+            document.getElementById('questionnaireModal').classList.add('hidden');
+            sessionStorage.setItem("hasAnsweredQuestionnaire", "true"); 
+        });
+
+        // --- メンバー一覧と並び替え ---
         const memberList = document.getElementById('memberList');
         const searchInput = document.getElementById('searchInput');
         let allUsers = [];
@@ -350,21 +396,47 @@
         function renderMembers() {
             const filterText = searchInput.value.toLowerCase();
             memberList.innerHTML = "";
-            const filtered = allUsers.filter(u => (u.name && u.name.toLowerCase().includes(filterText)) || (u.id && u.id.toLowerCase().includes(filterText)));
+            let filtered = allUsers.filter(u => (u.name && u.name.toLowerCase().includes(filterText)) || (u.id && u.id.toLowerCase().includes(filterText)));
+
+            const now = new Date();
 
             filtered.forEach(u => {
-                const statusClass = u.isOnline ? "online" : "offline";
-                const timeText = u.isOnline ? "オンライン" : `最終ログイン:<br>${formatTime(u.lastSeen)}`;
+                u.computedIsOnline = false;
+                u.computedLastSeen = 0;
+                if (u.lastSeen) {
+                    const lastSeenTime = u.lastSeen.toDate();
+                    u.computedLastSeen = lastSeenTime.getTime();
+                    if ((now - lastSeenTime) <= 60000) { 
+                        u.computedIsOnline = true;
+                    }
+                }
+            });
+
+            filtered.sort((a, b) => {
+                if (a.id === currentUser.id) return -1;
+                if (b.id === currentUser.id) return 1;
+                if (a.computedIsOnline && !b.computedIsOnline) return -1;
+                if (!a.computedIsOnline && b.computedIsOnline) return 1;
+                return b.computedLastSeen - a.computedLastSeen;
+            });
+
+            filtered.forEach(u => {
+                const statusClass = u.computedIsOnline ? "online" : "offline";
+                const timeText = u.computedIsOnline ? "オンライン" : `最終ログイン:<br>${formatTime(u.lastSeen)}`;
+                const youMark = (u.id === currentUser.id) ? " <span style='color:#007bff; font-weight:bold;'>(あなた)</span>" : "";
+                
                 memberList.innerHTML += `
                     <div class="member">
-                        <div><span class="status ${statusClass}"></span> ${u.name} <span style="color:#888; font-size:12px;">(@${u.id})</span></div>
+                        <div><span class="status ${statusClass}"></span> ${u.name}${youMark} <span style="color:#888; font-size:12px;">(No.${u.id})</span></div>
                         <div class="last-login">${timeText}</div>
                     </div>`;
             });
         }
+
+        setInterval(renderMembers, 30000); 
         searchInput.addEventListener('input', renderMembers);
 
-        // --- 画像送信 ---
+        // --- ファイル送信 ---
         const fileInput = document.getElementById('fileInput');
         document.getElementById('attachBtn').addEventListener('click', () => {
             if(!currentUser.id) return alert("ログインしてください");
@@ -381,16 +453,13 @@
                 const fRef = storageRef(storage, `uploads/${Date.now()}_${file.name}`);
                 await uploadBytes(fRef, file);
                 const url = await getDownloadURL(fRef);
-                
                 await addDoc(msgRef, {
                     uid: currentUser.id, name: currentUser.name, text: "", fileUrl: url,
                     fileType: file.type.startsWith('image/') ? 'image' : 'video',
                     createdAt: serverTimestamp(), likes: 0
                 });
-                updateUserPresence(true);
-            } catch(err) {
-                console.error(err); alert("送信失敗。");
-            } finally {
+                updateUserPresence();
+            } catch(err) { alert("送信失敗。"); } finally {
                 messageInput.value = ""; messageInput.disabled = false; e.target.value = "";
             }
         });
@@ -407,7 +476,7 @@
 
             try {
                 await addDoc(msgRef, { uid: currentUser.id, name: currentUser.name, text: text, createdAt: serverTimestamp(), likes: 0 });
-                updateUserPresence(true);
+                updateUserPresence();
             } catch (e) { console.error(e); }
         }
 
@@ -415,11 +484,9 @@
         messageInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
         messageInput.addEventListener('input', () => { messageInput.style.height = "40px"; messageInput.style.height = (messageInput.scrollHeight) + "px"; });
 
-        // --- メッセージ受信・描画 (★過去2日分だけ表示する) ---
+        // --- 受信と描画 ---
         const displayLimitTime = new Date();
         displayLimitTime.setDate(displayLimitTime.getDate() - 2);
-
-        // クエリに where を追加して2日以内のものだけ取得する
         const q = query(msgRef, where("createdAt", ">=", displayLimitTime), orderBy("createdAt", "asc"));
         
         onSnapshot(q, (snapshot) => {
@@ -442,7 +509,7 @@
                 const wrap = document.createElement('div');
                 wrap.className = `msg-wrap ${isMine ? 'mine' : ''}`;
                 wrap.innerHTML = `
-                    <div class="msg-info"><span>${data.name} (@${data.uid})</span><span class="msg-time">${timeString}</span></div>
+                    <div class="msg-info"><span>${data.name} (No.${data.uid})</span><span class="msg-time">${timeString}</span></div>
                     <div class="message">
                         ${linkedText.replace(/\n/g, '<br>')}${mediaHtml}
                         <button class="reaction" onclick="window.addReaction('${msgId}', ${data.likes || 0})">👍 <span>${data.likes || 0}</span></button>
@@ -474,65 +541,35 @@
         };
         window.addReaction = async function(id, currentLikes) { await updateDoc(doc(db, "messages", id), { likes: currentLikes + 1 }); };
 
-        // --- タブ切り替え & 通話ロジック (★軽量化対応) ---
+        // --- タブ切り替え ---
         const tabChat = document.getElementById('tabChat');
         const tabSites = document.getElementById('tabSites');
         const tabCall = document.getElementById('tabCall');
         const chatView = document.getElementById('chatView');
         const sitesView = document.getElementById('sitesView');
         const callView = document.getElementById('callView');
-        
-        // 軽量化のための要素
         const callStartContainer = document.getElementById('callStartContainer');
         const jitsiContainer = document.getElementById('jitsiContainer');
         const startCallBtn = document.getElementById('startCallBtn');
         let jitsiApi = null; 
 
         function hideAllViews() {
-            chatView.style.display = 'none';
-            sitesView.style.display = 'none';
-            callView.style.display = 'none';
-            tabChat.classList.remove('active');
-            tabSites.classList.remove('active');
-            tabCall.classList.remove('active');
+            chatView.style.display = 'none'; sitesView.style.display = 'none'; callView.style.display = 'none';
+            tabChat.classList.remove('active'); tabSites.classList.remove('active'); tabCall.classList.remove('active');
         }
 
-        tabChat.addEventListener('click', () => {
-            hideAllViews();
-            tabChat.classList.add('active');
-            chatView.style.display = 'flex';
-        });
+        tabChat.addEventListener('click', () => { hideAllViews(); tabChat.classList.add('active'); chatView.style.display = 'flex'; });
+        tabSites.addEventListener('click', () => { hideAllViews(); tabSites.classList.add('active'); sitesView.style.display = 'flex'; loadConvenientSites(); });
+        tabCall.addEventListener('click', () => { hideAllViews(); tabCall.classList.add('active'); callView.style.display = 'flex'; });
 
-        tabSites.addEventListener('click', () => {
-            hideAllViews();
-            tabSites.classList.add('active');
-            sitesView.style.display = 'flex';
-            loadConvenientSites();
-        });
-
-        tabCall.addEventListener('click', () => {
-            hideAllViews();
-            tabCall.classList.add('active');
-            callView.style.display = 'flex';
-        });
-
-        // ★ [通話を開始する] ボタンを押した時だけJitsiを読み込む
         startCallBtn.addEventListener('click', () => {
-            callStartContainer.style.display = 'none';
-            jitsiContainer.style.display = 'block';
-
+            callStartContainer.style.display = 'none'; jitsiContainer.style.display = 'block';
             if (!jitsiApi) {
-                const domain = 'meet.jit.si';
-                const options = {
-                    roomName: 'superchat64-secure-room-v1', // 推測されにくい名前に変更
-                    width: '100%',
-                    height: '100%',
-                    parentNode: jitsiContainer,
-                    userInfo: {
-                        displayName: currentUser.name || "ゲスト"
-                    }
-                };
-                jitsiApi = new JitsiMeetExternalAPI(domain, options);
+                jitsiApi = new JitsiMeetExternalAPI('meet.jit.si', {
+                    roomName: 'superchat64-secure-room-v1',
+                    width: '100%', height: '100%', parentNode: jitsiContainer,
+                    userInfo: { displayName: currentUser.name || "ゲスト" }
+                });
             }
         });
 
@@ -540,33 +577,25 @@
             const sitesContainer = document.getElementById('sitesContainer');
             sitesContainer.innerHTML = "<p style='padding:20px; color:#888;'>読み込み中...</p>";
             try {
-                const res = await fetch('web_tools.json');
+                const res = await fetch('便利サイト.json');
                 if(!res.ok) throw new Error();
                 const data = await res.json();
                 sitesContainer.innerHTML = ""; 
                 data.forEach(site => {
                     sitesContainer.innerHTML += `
                         <div class="site-card">
-                            <div class="site-card-header">
-                                <span class="site-name">${site.name}</span>
-                                <a href="${site.url}" target="_blank" class="link-btn" style="margin:0;">🔗 サイトを開く</a>
-                            </div>
+                            <div class="site-card-header"><span class="site-name">${site.name}</span><a href="${site.url}" target="_blank" class="link-btn" style="margin:0;">🔗 サイトを開く</a></div>
                             <div class="site-desc">${site.description}</div>
                         </div>`;
                 });
-            } catch (e) {
-                sitesContainer.innerHTML = `<p style='padding:20px; color:#f44336;'>'web_tools.json' を読み込めませんでした。</p>`;
-            }
+            } catch (e) { sitesContainer.innerHTML = `<p style='padding:20px; color:#f44336;'>'便利サイト.json' を読み込めませんでした。</p>`; }
         }
 
         const sidebar = document.getElementById('sidebar');
         const menuBtn = document.getElementById('menuBtn');
         const chatArea = document.getElementById('chatArea');
-
         menuBtn.addEventListener('click', () => sidebar.classList.toggle('open'));
-        chatArea.addEventListener('click', (e) => {
-            if(sidebar.classList.contains('open') && e.target !== menuBtn) sidebar.classList.remove('open');
-        });
+        chatArea.addEventListener('click', (e) => { if(sidebar.classList.contains('open') && e.target !== menuBtn) sidebar.classList.remove('open'); });
     </script>
 </body>
 </html>
